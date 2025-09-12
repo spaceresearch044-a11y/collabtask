@@ -1,0 +1,107 @@
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { supabase } from '../lib/supabase'
+import { setUser, setProfile, setLoading, setError, clearAuth } from '../store/slices/authSlice'
+import { RootState } from '../store/store'
+
+export const useAuth = () => {
+  const dispatch = useDispatch()
+  const { user, profile, loading, error } = useSelector((state: RootState) => state.auth)
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      dispatch(setUser(session?.user || null))
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
+        dispatch(setLoading(false))
+      }
+    })
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      dispatch(setUser(session?.user || null))
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
+        dispatch(clearAuth())
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [dispatch])
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        console.error('Error fetching profile:', error)
+        dispatch(setError(error.message))
+      } else {
+        dispatch(setProfile(data))
+      }
+    } catch (error: any) {
+      dispatch(setError(error.message))
+    } finally {
+      dispatch(setLoading(false))
+    }
+  }
+
+  const signIn = async (email: string, password: string) => {
+    dispatch(setLoading(true))
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      dispatch(setError(error.message))
+    }
+    dispatch(setLoading(false))
+  }
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    dispatch(setLoading(true))
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    
+    if (error) {
+      dispatch(setError(error.message))
+    } else if (data.user) {
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          email,
+          full_name: fullName,
+          role: 'member',
+          points: 0,
+          level: 1,
+        })
+      
+      if (profileError) {
+        dispatch(setError(profileError.message))
+      }
+    }
+    dispatch(setLoading(false))
+  }
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    dispatch(clearAuth())
+  }
+
+  return {
+    user,
+    profile,
+    loading,
+    error,
+    signIn,
+    signUp,
+    signOut,
+  }
+}
