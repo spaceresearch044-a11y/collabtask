@@ -43,8 +43,14 @@ export const useAuth = () => {
         .single()
 
       if (error) {
-        console.error('Error fetching profile:', error)
-        dispatch(setError(error.message))
+        // Handle case where no profile exists (PGRST116 error)
+        if (error.code === 'PGRST116') {
+          // No profile found - this is expected for new users
+          dispatch(setProfile(null))
+        } else {
+          console.error('Error fetching profile:', error)
+          dispatch(setError(error.message))
+        }
       } else {
         dispatch(setProfile(data))
       }
