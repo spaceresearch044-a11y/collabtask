@@ -14,13 +14,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const { signIn, loading, error } = useAuth()
+  const { signIn, loading, error, resendConfirmation } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     await signIn(email, password)
   }
 
+  const handleResendConfirmation = async () => {
+    if (email) {
+      await resendConfirmation(email)
+    }
+  }
+
+  const isEmailNotConfirmed = error?.includes('Email not confirmed')
   return (
     <Card className="p-8 space-y-6" glow>
       <div className="text-center space-y-2">
@@ -62,9 +69,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
+            className={`p-3 border rounded-lg ${
+              error.includes('Confirmation email sent') 
+                ? 'bg-green-500/10 border-green-500/20' 
+                : 'bg-red-500/10 border-red-500/20'
+            }`}
           >
-            <p className="text-red-400 text-sm">{error}</p>
+            <p className={`text-sm ${
+              error.includes('Confirmation email sent') 
+                ? 'text-green-400' 
+                : 'text-red-400'
+            }`}>
+              {error}
+            </p>
+            {isEmailNotConfirmed && (
+              <button
+                type="button"
+                onClick={handleResendConfirmation}
+                disabled={loading || !email}
+                className="mt-2 text-blue-400 hover:text-blue-300 text-sm underline disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Resend confirmation email
+              </button>
+            )}
           </motion.div>
         )}
 

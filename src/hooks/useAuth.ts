@@ -95,6 +95,20 @@ export const useAuth = () => {
     dispatch(clearAuth())
   }
 
+  const resendConfirmation = async (email: string) => {
+    dispatch(setLoading(true))
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+    })
+    
+    if (error) {
+      dispatch(setError(error.message))
+    } else {
+      dispatch(setError('Confirmation email sent! Please check your inbox.'))
+    }
+    dispatch(setLoading(false))
+  }
   return {
     user,
     profile,
@@ -103,5 +117,6 @@ export const useAuth = () => {
     signIn,
     signUp,
     signOut,
+    resendConfirmation,
   }
 }
