@@ -2,29 +2,13 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useSelector, useDispatch } from 'react-redux'
 import {
-  Home,
-  FolderOpen,
-  Calendar,
-  Users,
-  Settings,
-  Bell,
-  Trophy,
   Sparkles,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
 import { RootState } from '../../store/store'
 import { toggleSidebar } from '../../store/slices/uiSlice'
-
-const menuItems = [
-  { icon: Home, label: 'Dashboard', path: '/' },
-  { icon: FolderOpen, label: 'Projects', path: '/projects' },
-  { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: Users, label: 'Team', path: '/team' },
-  { icon: Bell, label: 'Notifications', path: '/notifications' },
-  { icon: Trophy, label: 'Achievements', path: '/achievements' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
-]
+import { Navigation } from './Navigation'
 
 export const Sidebar: React.FC = () => {
   const { sidebarOpen } = useSelector((state: RootState) => state.ui)
@@ -58,29 +42,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => (
-          <motion.button
-            key={item.path}
-            whileHover={{ x: 4 }}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200 ${
-              sidebarOpen ? 'justify-start' : 'justify-center'
-            }`}
-          >
-            <item.icon className="w-5 h-5 flex-shrink-0" />
-            {sidebarOpen && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="font-medium"
-              >
-                {item.label}
-              </motion.span>
-            )}
-          </motion.button>
-        ))}
-      </nav>
+      <Navigation />
 
       {/* User Profile */}
       {profile && (

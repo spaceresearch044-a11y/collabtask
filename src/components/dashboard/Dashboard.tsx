@@ -2,6 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../store/store'
+import { useProjects } from '../../hooks/useProjects'
 import { StatsCard } from './StatsCard'
 import { ActivityFeed } from './ActivityFeed'
 import { TaskBoard3D } from './TaskBoard3D'
@@ -17,11 +18,12 @@ import {
 export const Dashboard: React.FC = () => {
   const { profile } = useSelector((state: RootState) => state.auth)
   const { currentView } = useSelector((state: RootState) => state.ui)
+  const { projects } = useProjects()
 
   const stats = [
     {
       title: 'Tasks Completed',
-      value: '127',
+      value: '0',
       change: '+12% from last week',
       changeType: 'positive' as const,
       icon: CheckCircle2,
@@ -29,24 +31,24 @@ export const Dashboard: React.FC = () => {
     },
     {
       title: 'Active Projects',
-      value: '8',
-      change: '+2 new projects',
+      value: projects.length.toString(),
+      change: projects.length > 0 ? `${projects.length} active` : 'No projects yet',
       changeType: 'positive' as const,
       icon: Target,
       color: 'from-blue-500 to-cyan-600'
     },
     {
       title: 'Team Members',
-      value: '24',
-      change: '+3 this month',
+      value: '1',
+      change: 'Just you for now',
       changeType: 'positive' as const,
       icon: Users,
       color: 'from-purple-500 to-violet-600'
     },
     {
       title: 'Productivity Score',
-      value: '94%',
-      change: '+5% improvement',
+      value: '0%',
+      change: 'Start working to track',
       changeType: 'positive' as const,
       icon: TrendingUp,
       color: 'from-orange-500 to-amber-600'
@@ -68,7 +70,10 @@ export const Dashboard: React.FC = () => {
               Welcome back, {profile?.full_name || 'User'}! ✨
             </h1>
             <p className="text-lg text-gray-300">
-              You've completed 8 tasks this week. Keep up the great work!
+              {projects.length > 0 
+                ? `You have ${projects.length} active project${projects.length !== 1 ? 's' : ''}. Keep up the great work!`
+                : 'Ready to start your productivity journey? Create your first project!'
+              }
             </p>
           </div>
           <div className="flex items-center gap-4">

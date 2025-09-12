@@ -4,6 +4,7 @@ interface UIState {
   theme: 'light' | 'dark'
   sidebarOpen: boolean
   currentView: '3d' | 'kanban' | 'list'
+  currentPage: string
   showNotifications: boolean
   notifications: Array<{
     id: string
@@ -18,6 +19,7 @@ const initialState: UIState = {
   theme: 'dark',
   sidebarOpen: true,
   currentView: '3d',
+  currentPage: 'dashboard',
   showNotifications: false,
   notifications: [],
 }
@@ -34,6 +36,9 @@ export const uiSlice = createSlice({
     },
     setCurrentView: (state, action: PayloadAction<UIState['currentView']>) => {
       state.currentView = action.payload
+    },
+    setCurrentPage: (state, action: PayloadAction<string>) => {
+      state.currentPage = action.payload
     },
     toggleNotifications: (state) => {
       state.showNotifications = !state.showNotifications
@@ -59,6 +64,7 @@ export const {
   toggleTheme,
   toggleSidebar,
   setCurrentView,
+  setCurrentPage,
   toggleNotifications,
   addNotification,
   removeNotification,
