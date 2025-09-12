@@ -40,18 +40,13 @@ export const useAuth = () => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       if (error) {
-        // Handle case where no profile exists (PGRST116 error)
-        if (error.code === 'PGRST116') {
-          // No profile found - this is expected for new users
-          dispatch(setProfile(null))
-        } else {
-          console.error('Error fetching profile:', error)
-          dispatch(setError(error.message))
-        }
+        console.error('Error fetching profile:', error)
+        dispatch(setError(error.message))
       } else {
+        // data will be null if no profile exists, which is fine for new users
         dispatch(setProfile(data))
       }
     } catch (error: any) {

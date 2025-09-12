@@ -18,7 +18,7 @@ import {
 export const Dashboard: React.FC = () => {
   const { profile } = useSelector((state: RootState) => state.auth)
   const { currentView } = useSelector((state: RootState) => state.ui)
-  const { projects } = useProjects()
+  const { projects, loading: projectsLoading, error: projectsError } = useProjects()
 
   const stats = [
     {
@@ -54,6 +54,35 @@ export const Dashboard: React.FC = () => {
       color: 'from-orange-500 to-amber-600'
     }
   ]
+
+  // Show loading state
+  if (projectsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-300">Loading your projects...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error only if user has projects but fetch failed
+  if (projectsError && projects.length > 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
+            <span className="text-red-400 text-xl">⚠</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-2">Failed to load projects</h3>
+            <p className="text-gray-400">{projectsError}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

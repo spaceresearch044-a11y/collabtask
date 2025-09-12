@@ -6,6 +6,7 @@ import { Dashboard } from '../components/dashboard/Dashboard'
 import { GettingStarted } from '../components/onboarding/GettingStarted'
 import { ProjectsPage } from '../components/pages/ProjectsPage'
 import { EmptyState } from '../components/dashboard/EmptyState'
+import { TasksPage } from '../components/pages/TasksPage'
 import { useProjects } from '../hooks/useProjects'
 
 export const DashboardPage: React.FC = () => {
@@ -29,7 +30,7 @@ export const DashboardPage: React.FC = () => {
       case 'projects':
         return <ProjectsPage />
       case 'tasks':
-        return <EmptyState type="tasks" />
+        return <TasksPage />
       case 'calendar':
         return <EmptyState type="calendar" />
       case 'team':

@@ -30,20 +30,48 @@ export const useProjects = () => {
 
     dispatch(setLoading(true))
     try {
-      // Fetch projects where user is creator or member
-      const { data: userProjects, error: projectsError } = await supabase
+      // First, get projects created by user
+      const { data: createdProjects, error: createdError } = await supabase
         .from('projects')
         .select(`
           *,
-          project_members!inner(role),
           team_codes(code)
         `)
-        .or(`created_by.eq.${user.id},project_members.user_id.eq.${user.id}`)
+        .eq('created_by', user.id)
 
-      if (projectsError) throw projectsError
+      if (createdError) throw createdError
 
-      dispatch(setProjects(userProjects || []))
+      // Then, get projects where user is a member
+      const { data: memberProjects, error: memberError } = await supabase
+        .from('project_members')
+        .select(`
+          role,
+          projects(
+            *,
+            team_codes(code)
+          )
+        `)
+        .eq('user_id', user.id)
+
+      if (memberError) throw memberError
+
+      // Combine and deduplicate projects
+      const allProjects = [...(createdProjects || [])]
+      
+      if (memberProjects) {
+        memberProjects.forEach(member => {
+          if (member.projects && !allProjects.find(p => p.id === member.projects.id)) {
+            allProjects.push({
+              ...member.projects,
+              user_role: member.role
+            })
+          }
+        })
+      }
+
+      dispatch(setProjects(allProjects))
     } catch (error: any) {
+      console.error('Error fetching projects:', error)
       dispatch(setError(error.message))
     } finally {
       dispatch(setLoading(false))
@@ -65,9 +93,13 @@ export const useProjects = () => {
       const { data: project, error: projectError } = await supabase
         .from('projects')
         .insert({
-          ...projectData,
+          name: projectData.name,
+          description: projectData.description,
+          project_type: projectData.project_type,
+          deadline: projectData.deadline,
           created_by: user.id,
           color: getRandomColor(),
+          status: 'active'
         })
         .select()
         .single()
@@ -134,12 +166,20 @@ export const useProjects = () => {
       // Find project by team code
       const { data: codeData, error: codeError } = await supabase
         .from('team_codes')
-        .select('project_id, projects(*)')
+        .select(`
+          project_id,
+          projects(*)
+        `)
         .eq('code', teamCode)
         .gt('expires_at', new Date().toISOString())
         .single()
 
-      if (codeError) throw new Error('Invalid or expired team code')
+      if (codeError) {
+        if (codeError.code === 'PGRST116') {
+          throw new Error('Invalid or expired team code')
+        }
+        throw codeError
+      }
 
       // Check if user is already a member
       const { data: existingMember } = await supabase
@@ -147,7 +187,7 @@ export const useProjects = () => {
         .select('id')
         .eq('project_id', codeData.project_id)
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (existingMember) {
         throw new Error('You are already a member of this project')

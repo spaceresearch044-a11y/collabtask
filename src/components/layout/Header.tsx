@@ -15,13 +15,20 @@ import {
 import { RootState } from '../../store/store'
 import { toggleTheme, setCurrentView, toggleNotifications } from '../../store/slices/uiSlice'
 import { Button } from '../ui/Button'
+import { TaskCreationModal } from '../tasks/TaskCreationModal'
+import { useProjects } from '../../hooks/useProjects'
+import { useState } from 'react'
 
 export const Header: React.FC = () => {
   const { theme, currentView, notifications } = useSelector((state: RootState) => state.ui)
   const { profile } = useSelector((state: RootState) => state.auth)
+  const { projects } = useProjects()
   const dispatch = useDispatch()
+  const [showTaskModal, setShowTaskModal] = useState(false)
 
   const unreadCount = notifications.length
+  const hasProjects = projects.length > 0
+  const defaultProject = projects[0]
 
   const viewButtons = [
     { key: '3d', icon: Box, label: '3D View' },
@@ -66,7 +73,12 @@ export const Header: React.FC = () => {
 
         {/* Right side - Actions */}
         <div className="flex items-center gap-3">
-          <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
+          <Button 
+            variant="primary" 
+            icon={<Plus className="w-4 h-4" />}
+            onClick={() => hasProjects && setShowTaskModal(true)}
+            disabled={!hasProjects}
+          >
             New Task
           </Button>
 
@@ -116,6 +128,16 @@ export const Header: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Task Creation Modal */}
+      {showTaskModal && defaultProject && (
+        <TaskCreationModal
+          isOpen={showTaskModal}
+          onClose={() => setShowTaskModal(false)}
+          onSuccess={() => setShowTaskModal(false)}
+          projectId={defaultProject.id}
+        />
+      )}
     </header>
   )
 }
