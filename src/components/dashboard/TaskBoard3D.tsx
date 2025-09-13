@@ -104,8 +104,8 @@ export const TaskBoard3D: React.FC = () => {
   const { projects } = useProjects()
   const { tasks } = useTasks(projects[0]?.id)
   
-  // Convert tasks to 3D format
-  const tasks: Array<{
+  // Convert tasks to 3D format - renamed to avoid duplicate identifier
+  const tasks3D: Array<{
     id: string
     title: string
     status: string
@@ -164,7 +164,7 @@ export const TaskBoard3D: React.FC = () => {
         </div>
 
         <div className="h-96 bg-gradient-to-b from-gray-900/50 to-gray-800/50 rounded-lg overflow-hidden">
-          {tasks.length > 0 ? (
+          {tasks3D.length > 0 ? (
             <Canvas
               camera={{ position: [0, 0, 10], fov: 60 }}
               style={{ background: 'transparent' }}
@@ -175,7 +175,7 @@ export const TaskBoard3D: React.FC = () => {
               
               <FloatingParticles />
               
-              {tasks.map((task) => (
+              {tasks3D.map((task) => (
                 <Task3D
                   key={task.id}
                   position={task.position}
@@ -209,7 +209,7 @@ export const TaskBoard3D: React.FC = () => {
         </div>
 
         {/* Legend - only show if there are tasks */}
-        {tasks.length > 0 && (
+        {tasks3D.length > 0 && (
           <div className="flex items-center justify-center gap-6 mt-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-purple-500"></div>
