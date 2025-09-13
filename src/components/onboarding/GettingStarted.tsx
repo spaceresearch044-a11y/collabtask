@@ -13,18 +13,23 @@ import {
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ProjectCreationModal } from '../projects/ProjectCreationModal'
+import { useProjects } from '../../hooks/useProjects'
 
 interface GettingStartedProps {
-  onCreateProject: () => void
   onJoinTeam: () => void
 }
 
 export const GettingStarted: React.FC<GettingStartedProps> = ({
-  onCreateProject,
   onJoinTeam
 }) => {
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [showTour, setShowTour] = useState(false)
+  const { fetchProjects } = useProjects()
+
+  const handleProjectCreated = () => {
+    setShowProjectModal(false)
+    fetchProjects() // Refresh projects list
+  }
 
   const features = [
     {
@@ -193,7 +198,7 @@ export const GettingStarted: React.FC<GettingStartedProps> = ({
         <ProjectCreationModal
           isOpen={showProjectModal}
           onClose={() => setShowProjectModal(false)}
-          onSuccess={onCreateProject}
+          onSuccess={handleProjectCreated}
         />
       )}
     </>

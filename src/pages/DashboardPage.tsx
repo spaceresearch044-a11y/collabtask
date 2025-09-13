@@ -15,10 +15,9 @@ export const DashboardPage: React.FC = () => {
   
   const renderPageContent = () => {
     // Show onboarding for new users with no projects
-    if (projects.length === 0 && currentPage === 'dashboard' && !projectsError) {
+    if (projects.length === 0 && currentPage === 'dashboard' && !projectsError?.includes('Failed to load')) {
       return (
         <GettingStarted
-          onCreateProject={() => {}}
           onJoinTeam={() => {}}
         />
       )

@@ -33,12 +33,12 @@ export const useTasks = (projectId?: string) => {
         .from('tasks')
         .select(`
           *,
-          assigned_to_profile:profiles!tasks_assigned_to_fkey(
+          assigned_to_profile:assigned_to(
             id,
             full_name,
             email
           ),
-          created_by_profile:profiles!tasks_created_by_fkey(
+          created_by_profile:created_by(
             id,
             full_name,
             email
@@ -116,12 +116,12 @@ export const useTasks = (projectId?: string) => {
         })
         .select(`
           *,
-          assigned_to_profile:profiles!tasks_assigned_to_fkey(
+          assigned_to_profile:assigned_to(
             id,
             full_name,
             email
           ),
-          created_by_profile:profiles!tasks_created_by_fkey(
+          created_by_profile:created_by(
             id,
             full_name,
             email
@@ -181,12 +181,12 @@ export const useTasks = (projectId?: string) => {
         .eq('id', taskId)
         .select(`
           *,
-          assigned_to_profile:profiles!tasks_assigned_to_fkey(
+          assigned_to_profile:assigned_to(
             id,
             full_name,
             email
           ),
-          created_by_profile:profiles!tasks_created_by_fkey(
+          created_by_profile:created_by(
             id,
             full_name,
             email

@@ -4,6 +4,8 @@ import { OrbitControls, Text, Box, Sphere } from '@react-three/drei'
 import { motion } from 'framer-motion'
 import { CheckSquare } from 'lucide-react'
 import { Card } from '../ui/Card'
+import { useProjects } from '../../hooks/useProjects'
+import { useTasks } from '../../hooks/useTasks'
 import * as THREE from 'three'
 
 interface Task3DProps {
@@ -99,14 +101,46 @@ const FloatingParticles: React.FC = () => {
 }
 
 export const TaskBoard3D: React.FC = () => {
-  // Remove hardcoded tasks - these should come from actual user data
+  const { projects } = useProjects()
+  const { tasks } = useTasks(projects[0]?.id)
+  
+  // Convert tasks to 3D format
   const tasks: Array<{
     id: string
     title: string
     status: string
     color: string
     position: [number, number, number]
-  }> = []
+  }> = tasks.map((task, index) => ({
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    color: getStatusColor(task.status),
+    position: getTaskPosition(task.status, index)
+  }))
+
+  function getStatusColor(status: string): string {
+    switch (status) {
+      case 'todo': return '#8b5cf6'
+      case 'in_progress': return '#3b82f6'
+      case 'review': return '#f59e0b'
+      case 'completed': return '#10b981'
+      default: return '#6b7280'
+    }
+  }
+
+  function getTaskPosition(status: string, index: number): [number, number, number] {
+    const baseY = (index % 3) * 2 - 2
+    const baseZ = Math.floor(index / 3) * 1.5
+    
+    switch (status) {
+      case 'todo': return [-4, baseY, baseZ]
+      case 'in_progress': return [-1, baseY, baseZ]
+      case 'review': return [2, baseY, baseZ]
+      case 'completed': return [5, baseY, baseZ]
+      default: return [0, baseY, baseZ]
+    }
+  }
 
   return (
     <motion.div

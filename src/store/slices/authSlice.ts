@@ -11,6 +11,7 @@ interface AuthState {
     role: 'admin' | 'manager' | 'member'
     points: number
     level: number
+    has_ever_created_project: boolean
   } | null
   loading: boolean
   error: string | null

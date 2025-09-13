@@ -84,6 +84,7 @@ export const useAuth = () => {
           points: 0,
           level: 1,
           has_ever_created_project: false,
+          has_ever_created_project: false,
         })
       
       if (profileError) {
