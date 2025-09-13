@@ -56,9 +56,9 @@ export const useProjects = () => {
   const createProject = async (projectData: {
     name: string
     description?: string
-    project_type: 'individual' | 'team'
+    project_type?: 'individual' | 'team'
     deadline?: string | null
-    priority?: 'low' | 'medium' | 'high'
+    color?: string
   }) => {
     if (!user) throw new Error('User not authenticated')
 
@@ -75,10 +75,10 @@ export const useProjects = () => {
         .insert({
           name: projectData.name,
           description: projectData.description,
-          project_type: projectData.project_type,
+          project_type: projectData.project_type || 'individual',
           deadline: projectData.deadline,
           created_by: user.id,
-          color: getRandomColor(),
+          color: projectData.color || getRandomColor(),
           status: 'active'
         })
         .select()
@@ -102,7 +102,7 @@ export const useProjects = () => {
       let teamCode = null
 
       // Generate team code for team projects
-      if (projectData.project_type === 'team') {
+      if ((projectData.project_type || 'individual') === 'team') {
         try {
           const { data: generatedCode, error: codeError } = await supabase
             .rpc('generate_team_code')
@@ -131,14 +131,14 @@ export const useProjects = () => {
 
       // Log activity
       try {
-        await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: user.id,
-            project_id: project.id,
-            activity_type: 'created_project',
-            description: `Created project "${project.name}"`,
-          })
+        await supabase.rpc('log_activity', {
+          p_user_id: user.id,
+          p_action: 'created_project',
+          p_description: `Created project "${project.name}"`,
+          p_project_id: project.id,
+          p_target_id: project.id,
+          p_target_type: 'project'
+        })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
         // Continue without logging

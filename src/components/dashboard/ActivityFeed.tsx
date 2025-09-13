@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { Card } from '../ui/Card'
+import { useActivityLogs } from '../../hooks/useActivityLogs'
 import {
   CheckCircle,
   MessageCircle,
@@ -9,81 +10,54 @@ import {
   Clock,
 } from 'lucide-react'
 
-interface Activity {
-  id: string
-  type: 'task_completed' | 'comment' | 'file_uploaded' | 'user_joined' | 'deadline_approaching'
-  message: string
-  user: string
-  timestamp: string
-  avatar: string
-}
-
-const activities: Activity[] = [
-  {
-    id: '1',
-    type: 'task_completed',
-    message: 'completed "Design new homepage layout"',
-    user: 'Sarah Chen',
-    timestamp: '2 minutes ago',
-    avatar: 'SC'
-  },
-  {
-    id: '2',
-    type: 'comment',
-    message: 'commented on "API Integration"',
-    user: 'Alex Rodriguez',
-    timestamp: '15 minutes ago',
-    avatar: 'AR'
-  },
-  {
-    id: '3',
-    type: 'file_uploaded',
-    message: 'uploaded wireframes.fig to "Mobile App Redesign"',
-    user: 'Emma Wilson',
-    timestamp: '1 hour ago',
-    avatar: 'EW'
-  },
-  {
-    id: '4',
-    type: 'user_joined',
-    message: 'joined the project "Q4 Marketing Campaign"',
-    user: 'Mike Johnson',
-    timestamp: '2 hours ago',
-    avatar: 'MJ'
-  },
-  {
-    id: '5',
-    type: 'deadline_approaching',
-    message: 'Deadline approaching for "User Testing Phase"',
-    user: 'System',
-    timestamp: '3 hours ago',
-    avatar: '⚡'
-  }
-]
-
-const getActivityIcon = (type: Activity['type']) => {
+const getActivityIcon = (action: string) => {
   switch (type) {
-    case 'task_completed': return CheckCircle
-    case 'comment': return MessageCircle
-    case 'file_uploaded': return FileText
-    case 'user_joined': return Users
-    case 'deadline_approaching': return Clock
+    case 'completed_task': return CheckCircle
+    case 'created_task': return CheckCircle
+    case 'created_project': return FileText
+    case 'uploaded_file': return FileText
+    case 'scheduled_meeting': return Users
+    case 'created_event': return Clock
     default: return CheckCircle
   }
 }
 
-const getActivityColor = (type: Activity['type']) => {
-  switch (type) {
-    case 'task_completed': return 'from-green-500 to-emerald-600'
-    case 'comment': return 'from-blue-500 to-cyan-600'
-    case 'file_uploaded': return 'from-purple-500 to-violet-600'
-    case 'user_joined': return 'from-orange-500 to-amber-600'
-    case 'deadline_approaching': return 'from-red-500 to-pink-600'
+const getActivityColor = (action: string) => {
+  switch (action) {
+    case 'completed_task': return 'from-green-500 to-emerald-600'
+    case 'created_task': return 'from-blue-500 to-cyan-600'
+    case 'created_project': return 'from-purple-500 to-violet-600'
+    case 'uploaded_file': return 'from-orange-500 to-amber-600'
+    case 'scheduled_meeting': return 'from-pink-500 to-rose-600'
+    case 'created_event': return 'from-red-500 to-pink-600'
     default: return 'from-gray-500 to-gray-600'
   }
 }
 
+const formatTimeAgo = (dateString: string) => {
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  
+  if (diffInSeconds < 60) return 'Just now'
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
+  return `${Math.floor(diffInSeconds / 86400)} days ago`
+}
+
 export const ActivityFeed: React.FC = () => {
+  const { activities, loading } = useActivityLogs()
+
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </Card>
+    )
+  }
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -94,9 +68,9 @@ export const ActivityFeed: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {activities.map((activity, index) => {
-          const Icon = getActivityIcon(activity.type)
-          const color = getActivityColor(activity.type)
+        {activities.slice(0, 10).map((activity, index) => {
+          const Icon = getActivityIcon(activity.action)
+          const color = getActivityColor(activity.action)
 
           return (
             <motion.div
@@ -112,20 +86,26 @@ export const ActivityFeed: React.FC = () => {
 
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-200">
-                  <span className="font-medium text-white">{activity.user}</span>{' '}
-                  {activity.message}
+                  <span className="font-medium text-white">
+                    {activity.user_profile?.full_name || activity.user_profile?.email || 'User'}
+                  </span>{' '}
+                  {activity.description}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">{activity.timestamp}</p>
+                <p className="text-xs text-gray-400 mt-1">{formatTimeAgo(activity.created_at)}</p>
               </div>
 
-              {activity.user !== 'System' && (
                 <div className="w-6 h-6 rounded-full bg-gradient-to-r from-gray-600 to-gray-700 flex items-center justify-center text-xs font-medium text-white flex-shrink-0">
-                  {activity.avatar}
+                  {activity.user_profile?.full_name?.charAt(0) || activity.user_profile?.email?.charAt(0) || 'U'}
                 </div>
-              )}
             </motion.div>
           )
         })}
+        
+        {activities.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-sm">No recent activity</p>
+          </div>
+        )}
       </div>
     </Card>
   )

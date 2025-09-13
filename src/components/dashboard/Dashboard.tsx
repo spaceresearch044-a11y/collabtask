@@ -2,16 +2,24 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../store/store'
+import { useProjects } from '../../hooks/useProjects'
 import { ProjectOverviewCards } from './ProjectOverviewCards'
 import { TaskBoard3D } from './TaskBoard3D'
 import { ActivityFeed } from './ActivityFeed'
 import { TeamPresence } from './TeamPresence'
 import { QuickStats } from './QuickStats'
 import { WelcomeHero } from './WelcomeHero'
+import { EmptyState } from './EmptyState'
 
 export const Dashboard: React.FC = () => {
   const { profile } = useSelector((state: RootState) => state.auth)
   const { currentView } = useSelector((state: RootState) => state.ui)
+  const { projects, loading } = useProjects()
+
+  // Show empty state for new users with no projects
+  if (!loading && projects.length === 0) {
+    return <EmptyState type="projects" />
+  }
 
   return (
     <div className="space-y-8 relative overflow-hidden">
