@@ -11,7 +11,7 @@ import { useProjects } from '../hooks/useProjects'
 
 export const DashboardPage: React.FC = () => {
   const { currentPage } = useSelector((state: RootState) => state.ui)
-  const { projects } = useProjects()
+  const { projects, error: projectsError } = useProjects()
   
   const renderPageContent = () => {
     // Show onboarding for new users with no projects
@@ -57,6 +57,7 @@ export const DashboardPage: React.FC = () => {
         return <Dashboard />
     }
   }
+
   return (
     <MainLayout>
       {renderPageContent()}

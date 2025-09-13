@@ -5,6 +5,7 @@ import { store } from './store/store'
 import { useAuth } from './hooks/useAuth'
 import { AuthPage } from './pages/AuthPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
 
 const queryClient = new QueryClient()
 
@@ -22,14 +23,20 @@ const AppContent: React.FC = () => {
     )
   }
 
-  return user ? <DashboardPage /> : <AuthPage />
+  return (
+    <ErrorBoundary>
+      {user ? <DashboardPage /> : <AuthPage />}
+    </ErrorBoundary>
+  )
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        <AppContent />
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
       </Provider>
     </QueryClientProvider>
   )
