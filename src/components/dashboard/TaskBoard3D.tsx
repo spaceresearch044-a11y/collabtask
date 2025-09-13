@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Text, Box, Sphere } from '@react-three/drei'
 import { motion } from 'framer-motion'
+import { CheckSquare } from 'lucide-react'
 import { Card } from '../ui/Card'
 import * as THREE from 'three'
 
