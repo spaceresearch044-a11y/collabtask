@@ -29,32 +29,22 @@ export const useProjects = () => {
     if (!user) return
 
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
-      // Use the database function to get user projects with proper OR logic
+      // Use the safer database function that ensures profile exists
       const { data: projects, error } = await supabase
-        .rpc('get_user_projects', { user_uuid: user.id })
+        .rpc('get_user_projects_safe', { user_uuid: user.id })
 
       if (error) {
         console.error('Error fetching projects:', error)
-        
-        // Check if user has ever created projects to determine error vs empty state
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('has_ever_created_project')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (profile?.has_ever_created_project) {
-          // User had projects before, this is a real error
-          dispatch(setError('Failed to load your projects. Please try again.'))
-        } else {
-          // New user, show empty state
-          dispatch(setProjects([]))
-        }
+        dispatch(setError('Failed to load your projects. Please try again.'))
         return
       }
 
+      // Always set projects array, even if empty
       dispatch(setProjects(projects || []))
+      
     } catch (error: any) {
       console.error('Error fetching projects:', error)
       dispatch(setError(error.message))
@@ -73,7 +63,12 @@ export const useProjects = () => {
     if (!user) throw new Error('User not authenticated')
 
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
+      // Ensure user profile exists before creating project
+      await supabase.rpc('ensure_user_profile_exists', { user_id: user.id })
+      
       // Create project
       const { data: project, error: projectError } = await supabase
         .from('projects')
@@ -108,32 +103,56 @@ export const useProjects = () => {
 
       // Generate team code for team projects
       if (projectData.project_type === 'team') {
-        const { data: generatedCode, error: codeError } = await supabase
-          .rpc('generate_team_code')
+        try {
+          const { data: generatedCode, error: codeError } = await supabase
+            .rpc('generate_team_code')
 
-        if (codeError) throw codeError
+          if (codeError) {
+            console.warn('Team code generation failed:', codeError)
+            // Continue without team code for now
+          } else {
+            const { error: teamCodeError } = await supabase
+              .from('team_codes')
+              .insert({
+                code: generatedCode,
+                project_id: project.id,
+                created_by: user.id,
+              })
 
-        const { error: teamCodeError } = await supabase
-          .from('team_codes')
-          .insert({
-            code: generatedCode,
-            project_id: project.id,
-            created_by: user.id,
-          })
-
-        if (teamCodeError) throw teamCodeError
-        teamCode = generatedCode
+            if (!teamCodeError) {
+              teamCode = generatedCode
+            }
+          }
+        } catch (codeError) {
+          console.warn('Team code creation failed:', codeError)
+          // Continue without team code
+        }
       }
 
       // Log activity
-      await supabase
-        .from('activity_logs')
-        .insert({
-          user_id: user.id,
-          project_id: project.id,
-          activity_type: 'created_project',
-          description: `Created project "${project.name}"`,
-        })
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            project_id: project.id,
+            activity_type: 'created_project',
+            description: `Created project "${project.name}"`,
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+        // Continue without logging
+      }
+
+      // Update user's project creation flag
+      try {
+        await supabase
+          .from('profiles')
+          .update({ has_ever_created_project: true })
+          .eq('id', user.id)
+      } catch (updateError) {
+        console.warn('Profile update failed:', updateError)
+      }
 
       // Add project to local state with team code
       const projectWithCode = {
@@ -160,7 +179,12 @@ export const useProjects = () => {
     if (!user) throw new Error('User not authenticated')
 
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
+      // Ensure user profile exists
+      await supabase.rpc('ensure_user_profile_exists', { user_id: user.id })
+      
       // Find project by team code
       const { data: codeData, error: codeError } = await supabase
         .from('team_codes')
@@ -200,14 +224,18 @@ export const useProjects = () => {
       if (memberError) throw memberError
 
       // Log activity
-      await supabase
-        .from('activity_logs')
-        .insert({
-          user_id: user.id,
-          project_id: codeData.project_id,
-          activity_type: 'joined_project',
-          description: `Joined project "${codeData.projects.name}"`,
-        })
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            project_id: codeData.project_id,
+            activity_type: 'joined_project',
+            description: `Joined project "${codeData.projects.name}"`,
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
 
       dispatch(addProject(codeData.projects))
       
@@ -234,6 +262,8 @@ export const useProjects = () => {
     }>
   ) => {
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
       const { data, error } = await supabase
         .from('projects')
@@ -256,6 +286,8 @@ export const useProjects = () => {
 
   const deleteProjectData = async (projectId: string) => {
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
       const { error } = await supabase
         .from('projects')

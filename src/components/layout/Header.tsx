@@ -78,6 +78,7 @@ export const Header: React.FC = () => {
             icon={<Plus className="w-4 h-4" />}
             onClick={() => hasProjects && setShowTaskModal(true)}
             disabled={!hasProjects}
+            title={!hasProjects ? "Create a project first to add tasks" : "Create new task"}
           >
             New Task
           </Button>

@@ -67,8 +67,8 @@ export const Dashboard: React.FC = () => {
     )
   }
 
-  // Show error only if there's an actual error message (not for new users)
-  if (projectsError && profile?.has_ever_created_project) {
+  // Show error only if there's an actual network/database error
+  if (projectsError && projectsError.includes('Failed to load')) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">

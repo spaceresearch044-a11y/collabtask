@@ -11,11 +11,11 @@ import { useProjects } from '../hooks/useProjects'
 
 export const DashboardPage: React.FC = () => {
   const { currentPage } = useSelector((state: RootState) => state.ui)
-  const { projects, error: projectsError } = useProjects()
+  const { projects, loading: projectsLoading, error: projectsError } = useProjects()
   
   const renderPageContent = () => {
-    // Show onboarding for new users with no projects
-    if (projects.length === 0 && currentPage === 'dashboard' && !projectsError?.includes('Failed to load')) {
+    // Show onboarding for new users with no projects (but only after loading is complete)
+    if (!projectsLoading && projects.length === 0 && currentPage === 'dashboard' && !projectsError) {
       return (
         <GettingStarted
           onJoinTeam={() => {}}

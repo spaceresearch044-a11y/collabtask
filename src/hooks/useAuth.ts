@@ -68,30 +68,24 @@ export const useAuth = () => {
   const signUp = async (email: string, password: string, fullName: string) => {
     dispatch(setLoading(true))
     dispatch(setError(null))
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: {
+          full_name: fullName
+        }
+      }
+    })
     
     if (error) {
       dispatch(setError(error.message))
-    } else if (data.user) {
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          email,
-          full_name: fullName,
-          role: 'member',
-          points: 0,
-          level: 1,
-          has_ever_created_project: false,
-          has_ever_created_project: false,
-        })
-      
-      if (profileError) {
-        console.error('Profile creation error:', profileError)
-        dispatch(setError(profileError.message))
-      }
+    } else if (data.user && !data.user.email_confirmed_at) {
+      // For email confirmation flow, show success message
+      dispatch(setError('Please check your email and click the confirmation link to complete your registration.'))
     }
+    
     dispatch(setLoading(false))
   }
 

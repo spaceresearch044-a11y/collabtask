@@ -28,6 +28,8 @@ export const useTasks = (projectId?: string) => {
     if (!user) return
 
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -70,7 +72,12 @@ export const useTasks = (projectId?: string) => {
     if (!user) throw new Error('User not authenticated')
 
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
+      // Ensure user profile exists before creating task
+      await supabase.rpc('ensure_user_profile_exists', { user_id: user.id })
+      
       // Check if user has permission to create tasks in this project
       const { data: membership, error: membershipError } = await supabase
         .from('project_members')
@@ -134,15 +141,19 @@ export const useTasks = (projectId?: string) => {
       }
 
       // Log activity
-      await supabase
-        .from('activity_logs')
-        .insert({
-          user_id: user.id,
-          project_id: taskData.project_id,
-          task_id: task.id,
-          activity_type: 'created_task',
-          description: `Created task "${task.title}"`,
-        })
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            project_id: taskData.project_id,
+            task_id: task.id,
+            activity_type: 'created_task',
+            description: `Created task "${task.title}"`,
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
 
       dispatch(addTask(task))
       
@@ -174,6 +185,8 @@ export const useTasks = (projectId?: string) => {
     if (!user) throw new Error('User not authenticated')
 
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -200,15 +213,19 @@ export const useTasks = (projectId?: string) => {
 
       // Log activity for status changes
       if (updates.status === 'completed') {
-        await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: user.id,
-            project_id: data.project_id,
-            task_id: data.id,
-            activity_type: 'completed_task',
-            description: `Completed task "${data.title}"`,
-          })
+        try {
+          await supabase
+            .from('activity_logs')
+            .insert({
+              user_id: user.id,
+              project_id: data.project_id,
+              task_id: data.id,
+              activity_type: 'completed_task',
+              description: `Completed task "${data.title}"`,
+            })
+        } catch (logError) {
+          console.warn('Activity logging failed:', logError)
+        }
       }
 
       dispatch(updateTask(data))
@@ -225,6 +242,8 @@ export const useTasks = (projectId?: string) => {
     if (!user) throw new Error('User not authenticated')
 
     dispatch(setLoading(true))
+    dispatch(setError(null))
+    
     try {
       const { error } = await supabase
         .from('tasks')

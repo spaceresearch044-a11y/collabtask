@@ -102,22 +102,25 @@ const FloatingParticles: React.FC = () => {
 
 export const TaskBoard3D: React.FC = () => {
   const { projects } = useProjects()
-  const { tasks } = useTasks(projects[0]?.id)
+  const { tasks, loading: tasksLoading } = useTasks(projects[0]?.id)
   
-  // Convert tasks to 3D format - renamed to avoid duplicate identifier
+  // Only show tasks if we have a project and tasks are loaded
+  const shouldShowTasks = projects.length > 0 && !tasksLoading
+  
+  // Convert tasks to 3D format
   const tasks3D: Array<{
     id: string
     title: string
     status: string
     color: string
     position: [number, number, number]
-  }> = tasks.map((task, index) => ({
+  }> = shouldShowTasks ? tasks.map((task, index) => ({
     id: task.id,
     title: task.title,
     status: task.status,
     color: getStatusColor(task.status),
     position: getTaskPosition(task.status, index)
-  }))
+  })) : []
 
   function getStatusColor(status: string): string {
     switch (status) {
@@ -151,10 +154,14 @@ export const TaskBoard3D: React.FC = () => {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-white">3D Task Board</h3>
-          {tasks.length > 0 ? (
+          {shouldShowTasks && tasks.length > 0 ? (
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <div className="w-2 h-2 rounded-full bg-blue-500"></div>
               <span>Drag to rotate • Scroll to zoom</span>
+            </div>
+          ) : tasksLoading ? (
+            <div className="text-sm text-gray-400">
+              Loading tasks...
             </div>
           ) : (
             <div className="text-sm text-gray-400">
@@ -164,7 +171,14 @@ export const TaskBoard3D: React.FC = () => {
         </div>
 
         <div className="h-96 bg-gradient-to-b from-gray-900/50 to-gray-800/50 rounded-lg overflow-hidden">
-          {tasks3D.length > 0 ? (
+          {tasksLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center space-y-4">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-gray-400 text-sm">Loading your tasks...</p>
+              </div>
+            </div>
+          ) : tasks3D.length > 0 ? (
             <Canvas
               camera={{ position: [0, 0, 10], fov: 60 }}
               style={{ background: 'transparent' }}
@@ -200,8 +214,15 @@ export const TaskBoard3D: React.FC = () => {
                   <CheckSquare className="w-8 h-8 text-blue-400" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-white mb-2">No Tasks Yet</h4>
-                  <p className="text-gray-400 text-sm">Create your first task to see it in 3D space</p>
+                  <h4 className="text-lg font-semibold text-white mb-2">
+                    {projects.length === 0 ? 'No Projects Yet' : 'No Tasks Yet'}
+                  </h4>
+                  <p className="text-gray-400 text-sm">
+                    {projects.length === 0 
+                      ? 'Create your first project to start adding tasks'
+                      : 'Create your first task to see it in 3D space'
+                    }
+                  </p>
                 </div>
               </div>
             </div>
