@@ -30,46 +30,31 @@ export const useProjects = () => {
 
     dispatch(setLoading(true))
     try {
-      // First, get projects created by user
-      const { data: createdProjects, error: createdError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          team_codes(code)
-        `)
-        .eq('created_by', user.id)
+      // Use the database function to get user projects with proper OR logic
+      const { data: projects, error } = await supabase
+        .rpc('get_user_projects', { user_uuid: user.id })
 
-      if (createdError) throw createdError
+      if (error) {
+        console.error('Error fetching projects:', error)
+        
+        // Check if user has ever created projects to determine error vs empty state
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('has_ever_created_project')
+          .eq('id', user.id)
+          .maybeSingle()
 
-      // Then, get projects where user is a member
-      const { data: memberProjects, error: memberError } = await supabase
-        .from('project_members')
-        .select(`
-          role,
-          projects(
-            *,
-            team_codes(code)
-          )
-        `)
-        .eq('user_id', user.id)
-
-      if (memberError) throw memberError
-
-      // Combine and deduplicate projects
-      const allProjects = [...(createdProjects || [])]
-      
-      if (memberProjects) {
-        memberProjects.forEach(member => {
-          if (member.projects && !allProjects.find(p => p.id === member.projects.id)) {
-            allProjects.push({
-              ...member.projects,
-              user_role: member.role
-            })
-          }
-        })
+        if (profile?.has_ever_created_project) {
+          // User had projects before, this is a real error
+          dispatch(setError('Failed to load your projects. Please try again.'))
+        } else {
+          // New user, show empty state
+          dispatch(setProjects([]))
+        }
+        return
       }
 
-      dispatch(setProjects(allProjects))
+      dispatch(setProjects(projects || []))
     } catch (error: any) {
       console.error('Error fetching projects:', error)
       dispatch(setError(error.message))
@@ -83,7 +68,7 @@ export const useProjects = () => {
     description?: string
     project_type: 'individual' | 'team'
     deadline?: string | null
-    priority: 'low' | 'medium' | 'high'
+    priority?: 'low' | 'medium' | 'high'
   }) => {
     if (!user) throw new Error('User not authenticated')
 
@@ -102,9 +87,11 @@ export const useProjects = () => {
           status: 'active'
         })
         .select()
-        .single()
+        .maybeSingle()
 
-      if (projectError) throw projectError
+      if (projectError || !project) {
+        throw new Error(projectError?.message || 'Failed to create project')
+      }
 
       // Add creator as project member
       const { error: memberError } = await supabase
@@ -121,7 +108,7 @@ export const useProjects = () => {
 
       // Generate team code for team projects
       if (projectData.project_type === 'team') {
-        const { data: codeData, error: codeError } = await supabase
+        const { data: generatedCode, error: codeError } = await supabase
           .rpc('generate_team_code')
 
         if (codeError) throw codeError
@@ -129,13 +116,13 @@ export const useProjects = () => {
         const { error: teamCodeError } = await supabase
           .from('team_codes')
           .insert({
-            code: codeData,
+            code: generatedCode,
             project_id: project.id,
             created_by: user.id,
           })
 
         if (teamCodeError) throw teamCodeError
-        teamCode = codeData
+        teamCode = generatedCode
       }
 
       // Log activity
@@ -148,9 +135,20 @@ export const useProjects = () => {
           description: `Created project "${project.name}"`,
         })
 
-      dispatch(addProject(project))
+      // Add project to local state with team code
+      const projectWithCode = {
+        ...project,
+        team_code: teamCode,
+        user_role: 'lead'
+      }
+      dispatch(addProject(projectWithCode))
+      
+      // Refetch to ensure consistency
+      setTimeout(() => fetchProjects(), 100)
+      
       return { project, teamCode }
     } catch (error: any) {
+      console.error('Create project error:', error)
       dispatch(setError(error.message))
       throw error
     } finally {
@@ -172,13 +170,10 @@ export const useProjects = () => {
         `)
         .eq('code', teamCode)
         .gt('expires_at', new Date().toISOString())
-        .single()
+        .maybeSingle()
 
-      if (codeError) {
-        if (codeError.code === 'PGRST116') {
-          throw new Error('Invalid or expired team code')
-        }
-        throw codeError
+      if (codeError || !codeData) {
+        throw new Error('Invalid or expired team code')
       }
 
       // Check if user is already a member
@@ -215,6 +210,10 @@ export const useProjects = () => {
         })
 
       dispatch(addProject(codeData.projects))
+      
+      // Refetch to ensure consistency
+      setTimeout(() => fetchProjects(), 100)
+      
       return codeData.projects
     } catch (error: any) {
       dispatch(setError(error.message))

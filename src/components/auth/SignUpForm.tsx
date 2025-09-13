@@ -19,7 +19,12 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onToggleMode }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await signUp(email, password, fullName)
+    try {
+      await signUp(email, password, fullName)
+    } catch (error) {
+      console.error('Sign up error:', error)
+      // Error handling is done in the hook
+    }
   }
 
   return (

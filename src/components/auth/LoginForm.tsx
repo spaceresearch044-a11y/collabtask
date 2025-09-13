@@ -18,7 +18,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await signIn(email, password)
+    try {
+      await signIn(email, password)
+    } catch (error) {
+      console.error('Sign in error:', error)
+      // Error handling is done in the hook
+    }
   }
 
   const handleResendConfirmation = async () => {

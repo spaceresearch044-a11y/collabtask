@@ -83,9 +83,11 @@ export const useTasks = (projectId?: string) => {
         .from('projects')
         .select('created_by')
         .eq('id', taskData.project_id)
-        .single()
+        .maybeSingle()
 
-      if (projectError) throw projectError
+      if (projectError || !project) {
+        throw new Error('Project not found')
+      }
 
       // User must be project creator or a member
       if (project.created_by !== user.id && !membership) {
@@ -125,9 +127,11 @@ export const useTasks = (projectId?: string) => {
             email
           )
         `)
-        .single()
+        .maybeSingle()
 
-      if (taskError) throw taskError
+      if (taskError || !task) {
+        throw new Error(taskError?.message || 'Failed to create task')
+      }
 
       // Log activity
       await supabase
@@ -141,8 +145,13 @@ export const useTasks = (projectId?: string) => {
         })
 
       dispatch(addTask(task))
+      
+      // Refetch to ensure consistency
+      setTimeout(() => fetchTasks(taskData.project_id), 100)
+      
       return task
     } catch (error: any) {
+      console.error('Create task error:', error)
       dispatch(setError(error.message))
       throw error
     } finally {
@@ -183,9 +192,11 @@ export const useTasks = (projectId?: string) => {
             email
           )
         `)
-        .single()
+        .maybeSingle()
 
-      if (error) throw error
+      if (error || !data) {
+        throw new Error(error?.message || 'Failed to update task')
+      }
 
       // Log activity for status changes
       if (updates.status === 'completed') {

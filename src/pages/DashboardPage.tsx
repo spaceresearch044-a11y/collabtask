@@ -15,7 +15,7 @@ export const DashboardPage: React.FC = () => {
   
   const renderPageContent = () => {
     // Show onboarding for new users with no projects
-    if (projects.length === 0 && currentPage === 'dashboard') {
+    if (projects.length === 0 && currentPage === 'dashboard' && !projectsError) {
       return (
         <GettingStarted
           onCreateProject={() => {}}

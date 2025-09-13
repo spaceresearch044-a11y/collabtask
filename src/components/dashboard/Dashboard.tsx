@@ -67,8 +67,8 @@ export const Dashboard: React.FC = () => {
     )
   }
 
-  // Show error only if user has projects but fetch failed
-  if (projectsError && projects.length > 0) {
+  // Show error only if there's an actual error message (not for new users)
+  if (projectsError && projectsError.includes('Failed to load your projects')) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
@@ -78,6 +78,12 @@ export const Dashboard: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold text-white mb-2">Failed to load projects</h3>
             <p className="text-gray-400">{projectsError}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>

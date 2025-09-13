@@ -46,7 +46,6 @@ export const useAuth = () => {
         console.error('Error fetching profile:', error)
         dispatch(setError(error.message))
       } else {
-        // data will be null if no profile exists, which is fine for new users
         dispatch(setProfile(data))
       }
     } catch (error: any) {
@@ -58,6 +57,7 @@ export const useAuth = () => {
 
   const signIn = async (email: string, password: string) => {
     dispatch(setLoading(true))
+    dispatch(setError(null))
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       dispatch(setError(error.message))
@@ -67,6 +67,7 @@ export const useAuth = () => {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     dispatch(setLoading(true))
+    dispatch(setError(null))
     const { data, error } = await supabase.auth.signUp({ email, password })
     
     if (error) {
@@ -82,9 +83,11 @@ export const useAuth = () => {
           role: 'member',
           points: 0,
           level: 1,
+          has_ever_created_project: false,
         })
       
       if (profileError) {
+        console.error('Profile creation error:', profileError)
         dispatch(setError(profileError.message))
       }
     }

@@ -51,7 +51,6 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
           description: formData.description,
           project_type: formData.type,
           deadline: formData.deadline || null,
-          priority: formData.priority
         })
         
         if (formData.type === 'team' && result?.teamCode) {
@@ -65,6 +64,7 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
       onClose()
     } catch (error) {
       console.error('Error creating/joining project:', error)
+      // Error is already handled in the hook, just log it here
     }
   }
 
