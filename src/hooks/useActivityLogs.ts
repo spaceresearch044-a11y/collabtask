@@ -26,6 +26,46 @@ export const useActivityLogs = () => {
   const [error, setError] = useState<string | null>(null)
   const { user } = useSelector((state: RootState) => state.auth)
 
+  // Helper function to get project IDs where user is a member
+  const getMemberProjectIdsForUser = async (userId: string): Promise<string[]> => {
+    const { data, error } = await supabase
+      .from('project_members')
+      .select('project_id')
+      .eq('user_id', userId)
+    
+    if (error) {
+      console.error('Error fetching member projects:', error)
+      return []
+    }
+    
+    return data?.map(item => item.project_id) || []
+  }
+
+  // Helper function to get all relevant project IDs for user
+  const getRelevantProjectIdsForUser = async (userId: string): Promise<string[]> => {
+    // Get projects created by user
+    const { data: createdProjects, error: createdError } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('created_by', userId)
+    
+    if (createdError) {
+      console.error('Error fetching created projects:', createdError)
+      return []
+    }
+    
+    // Get projects where user is a member
+    const memberProjectIds = await getMemberProjectIdsForUser(userId)
+    
+    // Combine and deduplicate
+    const allProjectIds = [
+      ...(createdProjects?.map(p => p.id) || []),
+      ...memberProjectIds
+    ]
+    
+    return [...new Set(allProjectIds)]
+  }
+
   const fetchActivities = async (projectId?: string, limit: number = 50) => {
     if (!user) return
 
@@ -34,37 +74,62 @@ export const useActivityLogs = () => {
     
     try {
       let query = supabase
-        .from('activity_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit)
-
-      if (projectId) {
         // For specific project, filter by project_id and let RLS handle access
-        query = query.eq('project_id', projectId)
+        // For specific project, query directly with project filter
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+
+        if (error) throw error
+        
+        // Fetch user profiles separately
+        const userIds = [...new Set(data?.map(activity => activity.user_id) || [])]
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds)
+        
+        // Combine the data
+        const activitiesWithProfiles = (data || []).map(activity => ({
+          ...activity,
+          user_profile: profiles?.find(profile => profile.id === activity.user_id)
+        }))
+        
+        setActivities(activitiesWithProfiles)
       } else {
         // For general activities, only show user's own activities
-        query = query.eq('user_id', user.id)
+        // For general activities, pre-fetch project IDs to avoid RLS recursion
+        const relevantProjectIds = await getRelevantProjectIdsForUser(user.id)
+        
+        // Query activities for user's projects OR user's own activities
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .or(`project_id.in.(${relevantProjectIds.join(',')}),user_id.eq.${user.id}`)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+
+        if (error) throw error
+        
+        // Fetch user profiles separately
+        const userIds = [...new Set(data?.map(activity => activity.user_id) || [])]
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds)
+        
+        // Combine the data
+        const activitiesWithProfiles = (data || []).map(activity => ({
+          ...activity,
+          user_profile: profiles?.find(profile => profile.id === activity.user_id)
+        }))
+        
+        setActivities(activitiesWithProfiles)
       }
 
-      const { data, error } = await query
-
-      if (error) throw error
-      
-      // Fetch user profiles separately to avoid RLS recursion
-      const userIds = [...new Set(data?.map(activity => activity.user_id) || [])]
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', userIds)
-      
-      // Combine the data
-      const activitiesWithProfiles = (data || []).map(activity => ({
-        ...activity,
-        user_profile: profiles?.find(profile => profile.id === activity.user_id)
-      }))
-      
-      setActivities(activitiesWithProfiles)
     } catch (error: any) {
       console.error('Error fetching activity logs:', error)
       setError(error.message)
