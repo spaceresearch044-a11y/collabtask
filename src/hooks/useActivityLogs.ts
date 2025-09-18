@@ -41,6 +41,14 @@ export const useActivityLogs = () => {
       
       const accessibleProjectIds = userProjects?.map((p: any) => p.project_id) || []
       
+      // First, get the user's accessible project IDs to avoid RLS recursion
+      const { data: userProjects, error: projectsError } = await supabase
+        .rpc('get_user_projects_safe', { user_id: user.id })
+      
+      if (projectsError) throw projectsError
+      
+      const accessibleProjectIds = userProjects?.map((p: any) => p.project_id) || []
+      
       let query = supabase
         .from('activity_logs')
         .select(`
@@ -55,7 +63,14 @@ export const useActivityLogs = () => {
         if (!accessibleProjectIds.includes(projectId)) {
           throw new Error('Access denied to project')
         }
+        // If specific project requested, ensure user has access to it
+        if (!accessibleProjectIds.includes(projectId)) {
+          throw new Error('Access denied to project')
+        }
         query = query.eq('project_id', projectId)
+      } else {
+        // Filter by accessible projects OR user's own activities
+        query = query.or(`project_id.in.(${accessibleProjectIds.join(',')}),user_id.eq.${user.id}`)
       } else {
         // Filter by accessible projects OR user's own activities
         query = query.or(`project_id.in.(${accessibleProjectIds.join(',')}),user_id.eq.${user.id}`)
