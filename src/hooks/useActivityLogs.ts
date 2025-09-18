@@ -33,24 +33,20 @@ export const useActivityLogs = () => {
     setError(null)
     
     try {
-      // First, get the user's accessible project IDs to avoid RLS recursion
-      const { data: userProjects, error: projectsError } = await supabase
-        .rpc('get_user_projects_safe', { user_uuid: user.id })
-      
+      let query = supabase
+        .from('activity_logs')
+        .select(`
+          *,
           user_profile:profiles(full_name, email)
         `)
         .order('created_at', { ascending: false })
         .limit(limit)
 
       if (projectId) {
-        // If specific project requested, ensure user has access to it
-        if (!accessibleProjectIds.includes(projectId)) {
-          throw new Error('Access denied to project')
-        }
-        // For specific project, just filter by project_id and let RLS handle access
+        // For specific project, filter by project_id and let RLS handle access
         query = query.eq('project_id', projectId)
       } else {
-        // For general activities, only show user's own activities to avoid RLS recursion
+        // For general activities, only show user's own activities
         query = query.eq('user_id', user.id)
       }
 
