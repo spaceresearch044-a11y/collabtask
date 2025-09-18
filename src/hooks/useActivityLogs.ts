@@ -39,7 +39,7 @@ export const useActivityLogs = (projectId?: string) => {
         .from('activity_logs')
         .select(`
           *,
-          user_profile:profiles!activity_logs_user_id_fkey(
+          user_profile:profiles(
             id,
             full_name,
             email,
@@ -108,7 +108,7 @@ export const useActivityLogs = (projectId?: string) => {
         .from('activity_logs')
         .select(`
           *,
-          user_profile:profiles!activity_logs_user_id_fkey(
+          user_profile:profiles(
             id,
             full_name,
             email,
@@ -134,7 +134,7 @@ export const useActivityLogs = (projectId?: string) => {
         .from('activity_logs')
         .select(`
           *,
-          user_profile:profiles!activity_logs_user_id_fkey(
+          user_profile:profiles(
             id,
             full_name,
             email,
@@ -161,7 +161,7 @@ export const useActivityLogs = (projectId?: string) => {
         .from('activity_logs')
         .select(`
           *,
-          user_profile:profiles!activity_logs_user_id_fkey(
+          user_profile:profiles(
             id,
             full_name,
             email,
@@ -188,7 +188,7 @@ export const useActivityLogs = (projectId?: string) => {
         .from('activity_logs')
         .select(`
           *,
-          user_profile:profiles!activity_logs_user_id_fkey(
+          user_profile:profiles(
             id,
             full_name,
             email,
