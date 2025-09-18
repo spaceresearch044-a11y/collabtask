@@ -7,36 +7,109 @@ import {
   Calendar,
   Users,
   Settings,
-  Bell,
-  Trophy,
-  Sparkles,
-  ChevronLeft,
-  ChevronRight,
   Video,
   FileText,
   BarChart3,
+  Trophy,
+  Bell,
+  Sparkles,
+  ChevronLeft,
   Zap,
 } from 'lucide-react'
 import { RootState } from '../../store/store'
-import { toggleSidebar } from '../../store/slices/uiSlice'
+import { toggleSidebar, setCurrentPage } from '../../store/slices/uiSlice'
 
 const menuItems = [
-  { icon: Home, label: 'Dashboard', path: '/', color: 'text-blue-400', hoverColor: 'hover:bg-blue-500/10' },
-  { icon: FolderOpen, label: 'Projects', path: '/projects', color: 'text-purple-400', hoverColor: 'hover:bg-purple-500/10' },
-  { icon: Calendar, label: 'Calendar', path: '/calendar', color: 'text-green-400', hoverColor: 'hover:bg-green-500/10' },
-  { icon: Users, label: 'Team', path: '/team', color: 'text-orange-400', hoverColor: 'hover:bg-orange-500/10' },
-  { icon: Video, label: 'Meeting Room', path: '/meetings', color: 'text-pink-400', hoverColor: 'hover:bg-pink-500/10' },
-  { icon: FileText, label: 'Files', path: '/files', color: 'text-cyan-400', hoverColor: 'hover:bg-cyan-500/10' },
-  { icon: BarChart3, label: 'Reports', path: '/reports', color: 'text-yellow-400', hoverColor: 'hover:bg-yellow-500/10' },
-  { icon: Bell, label: 'Notifications', path: '/notifications', color: 'text-red-400', hoverColor: 'hover:bg-red-500/10' },
-  { icon: Trophy, label: 'Achievements', path: '/achievements', color: 'text-amber-400', hoverColor: 'hover:bg-amber-500/10' },
-  { icon: Settings, label: 'Settings', path: '/settings', color: 'text-gray-400', hoverColor: 'hover:bg-gray-500/10' },
+  { 
+    icon: Home, 
+    label: 'Dashboard', 
+    key: 'dashboard',
+    color: 'text-blue-400', 
+    hoverColor: 'hover:bg-blue-500/10',
+    gradient: 'from-blue-500 to-cyan-600'
+  },
+  { 
+    icon: FolderOpen, 
+    label: 'Projects', 
+    key: 'projects',
+    color: 'text-purple-400', 
+    hoverColor: 'hover:bg-purple-500/10',
+    gradient: 'from-purple-500 to-violet-600'
+  },
+  { 
+    icon: Calendar, 
+    label: 'Calendar', 
+    key: 'calendar',
+    color: 'text-green-400', 
+    hoverColor: 'hover:bg-green-500/10',
+    gradient: 'from-green-500 to-emerald-600'
+  },
+  { 
+    icon: Users, 
+    label: 'Team', 
+    key: 'team',
+    color: 'text-orange-400', 
+    hoverColor: 'hover:bg-orange-500/10',
+    gradient: 'from-orange-500 to-amber-600'
+  },
+  { 
+    icon: Video, 
+    label: 'Meeting Room', 
+    key: 'meetings',
+    color: 'text-pink-400', 
+    hoverColor: 'hover:bg-pink-500/10',
+    gradient: 'from-pink-500 to-rose-600'
+  },
+  { 
+    icon: FileText, 
+    label: 'Files', 
+    key: 'files',
+    color: 'text-cyan-400', 
+    hoverColor: 'hover:bg-cyan-500/10',
+    gradient: 'from-cyan-500 to-blue-600'
+  },
+  { 
+    icon: BarChart3, 
+    label: 'Reports', 
+    key: 'reports',
+    color: 'text-yellow-400', 
+    hoverColor: 'hover:bg-yellow-500/10',
+    gradient: 'from-yellow-500 to-orange-600'
+  },
+  { 
+    icon: Bell, 
+    label: 'Notifications', 
+    key: 'notifications',
+    color: 'text-red-400', 
+    hoverColor: 'hover:bg-red-500/10',
+    gradient: 'from-red-500 to-pink-600'
+  },
+  { 
+    icon: Trophy, 
+    label: 'Achievements', 
+    key: 'achievements',
+    color: 'text-amber-400', 
+    hoverColor: 'hover:bg-amber-500/10',
+    gradient: 'from-amber-500 to-yellow-600'
+  },
+  { 
+    icon: Settings, 
+    label: 'Settings', 
+    key: 'settings',
+    color: 'text-gray-400', 
+    hoverColor: 'hover:bg-gray-500/10',
+    gradient: 'from-gray-500 to-gray-600'
+  },
 ]
 
 export const Sidebar: React.FC = () => {
-  const { sidebarOpen } = useSelector((state: RootState) => state.ui)
+  const { sidebarOpen, currentPage } = useSelector((state: RootState) => state.ui)
   const { profile } = useSelector((state: RootState) => state.auth)
   const dispatch = useDispatch()
+
+  const handleNavigation = (pageKey: string) => {
+    dispatch(setCurrentPage(pageKey))
+  }
 
   return (
     <motion.aside
@@ -100,41 +173,107 @@ export const Sidebar: React.FC = () => {
       <nav className="flex-1 p-4 space-y-2 relative z-10">
         {menuItems.map((item, index) => (
           <motion.button
-            key={item.path}
+            key={item.key}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
             whileHover={{ 
               x: sidebarOpen ? 8 : 4,
-              scale: 1.02
+              scale: 1.02,
+              rotateY: 5,
+              rotateX: 2
             }}
             whileTap={{ scale: 0.98 }}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white transition-all duration-200 group ${item.hoverColor} ${
+            onClick={() => handleNavigation(item.key)}
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
+              currentPage === item.key 
+                ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-blue-500/25` 
+                : `text-gray-300 hover:text-white ${item.hoverColor}`
+            } ${
               sidebarOpen ? 'justify-start' : 'justify-center'
             }`}
           >
+            {/* 3D Glow Effect */}
+            {currentPage === item.key && (
+              <motion.div
+                layoutId="activeGlow"
+                className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl blur-sm"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            
             <motion.div
-              whileHover={{ rotate: 5 }}
-              className={`${item.color} group-hover:scale-110 transition-transform duration-200`}
+              whileHover={{ 
+                rotate: [0, -10, 10, 0],
+                scale: 1.2,
+                rotateY: 15
+              }}
+              transition={{ duration: 0.5 }}
+              className={`relative z-10 ${
+                currentPage === item.key ? 'text-white' : item.color
+              } group-hover:scale-110 transition-all duration-300`}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
+              
+              {/* Floating particles for active item */}
+              {currentPage === item.key && (
+                <>
+                  {[...Array(3)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1 h-1 bg-white/60 rounded-full"
+                      style={{
+                        left: `${Math.random() * 20 - 10}px`,
+                        top: `${Math.random() * 20 - 10}px`,
+                      }}
+                      animate={{
+                        y: [-5, 5, -5],
+                        opacity: [0.6, 1, 0.6],
+                        scale: [0.8, 1.2, 0.8]
+                      }}
+                      transition={{
+                        duration: 2 + i * 0.5,
+                        repeat: Infinity,
+                        delay: i * 0.3,
+                      }}
+                    />
+                  ))}
+                </>
+              )}
             </motion.div>
+            
             {sidebarOpen && (
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.1 }}
-                className="font-medium"
+                className={`font-medium relative z-10 ${
+                  currentPage === item.key ? 'text-white' : ''
+                }`}
               >
                 {item.label}
               </motion.span>
             )}
             
-            {/* Hover indicator */}
-            <motion.div
-              className="absolute right-2 w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              initial={false}
-            />
+            {/* 3D Hover indicator */}
+            {currentPage !== item.key && (
+              <motion.div
+                className="absolute right-2 w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                whileHover={{ scale: 1.2, x: 2 }}
+              />
+            )}
+            
+            {/* Tooltip for collapsed sidebar */}
+            {!sidebarOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, x: -10 }}
+                whileHover={{ opacity: 1, scale: 1, x: 0 }}
+                className="absolute left-full ml-4 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm rounded-lg whitespace-nowrap z-50 pointer-events-none shadow-lg"
+              >
+                {item.label}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-800 border-l border-b border-gray-700 rotate-45"></div>
+              </motion.div>
+            )}
           </motion.button>
         ))}
       </nav>

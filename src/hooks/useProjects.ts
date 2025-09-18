@@ -32,22 +32,66 @@ export const useProjects = () => {
     dispatch(setError(null))
     
     try {
-      // Use the safer database function that ensures profile exists
-      const { data: projects, error } = await supabase
-        .rpc('get_user_projects_safe', { user_uuid: user.id })
+      // First check if user profile exists and has ever created projects
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('has_ever_created_project')
+        .eq('id', user.id)
+        .maybeSingle()
 
-      if (error) {
-        console.error('Error fetching projects:', error)
+      // Fetch user's own projects and projects they're members of
+      const { data: ownProjects, error: ownError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('created_by', user.id)
+
+      const { data: memberProjects, error: memberError } = await supabase
+        .from('project_members')
+        .select(`
+          project_id,
+          role,
+          projects (*)
+        `)
+        .eq('user_id', user.id)
+
+      if (ownError && profile?.has_ever_created_project) {
+        // Only show error if user has created projects before
+        console.error('Error fetching own projects:', ownError)
         dispatch(setError('Failed to load your projects. Please try again.'))
         return
       }
 
+      if (memberError && profile?.has_ever_created_project) {
+        // Only show error if user has joined projects before
+        console.error('Error fetching member projects:', memberError)
+        dispatch(setError('Failed to load your projects. Please try again.'))
+        return
+      }
+
+      // Combine own projects and member projects
+      const allProjects = [
+        ...(ownProjects || []).map(p => ({ ...p, user_role: 'owner' })),
+        ...(memberProjects || []).map(mp => ({ 
+          ...mp.projects, 
+          user_role: mp.role 
+        }))
+      ]
+
       // Always set projects array, even if empty
-      dispatch(setProjects(projects || []))
-      
+      dispatch(setProjects(allProjects))
+
     } catch (error: any) {
       console.error('Error fetching projects:', error)
-      dispatch(setError(error.message))
+      // Only show error if user has created/joined projects before
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('has_ever_created_project')
+        .eq('id', user.id)
+        .maybeSingle()
+      
+      if (profile?.has_ever_created_project) {
+        dispatch(setError('Failed to load your projects. Please try again.'))
+      }
     } finally {
       dispatch(setLoading(false))
     }

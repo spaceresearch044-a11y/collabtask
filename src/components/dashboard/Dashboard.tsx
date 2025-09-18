@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { useSelector } from 'react-redux'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 import { RootState } from '../../store/store'
 import { useProjects } from '../../hooks/useProjects'
 import { ProjectOverviewCards } from './ProjectOverviewCards'
@@ -10,15 +11,46 @@ import { TeamPresence } from './TeamPresence'
 import { QuickStats } from './QuickStats'
 import { WelcomeHero } from './WelcomeHero'
 import { EmptyState } from './EmptyState'
+import { Card } from '../ui/Card'
+import { Button } from '../ui/Button'
 
 export const Dashboard: React.FC = () => {
   const { profile } = useSelector((state: RootState) => state.auth)
   const { currentView } = useSelector((state: RootState) => state.ui)
-  const { projects, loading } = useProjects()
+  const { projects, loading, error } = useProjects()
+
+  // Show error popup only for users who have created projects before
+  const shouldShowError = error && profile?.has_ever_created_project
 
   // Show empty state for new users with no projects
-  if (!loading && projects.length === 0) {
+  if (!loading && projects.length === 0 && !shouldShowError) {
     return <EmptyState type="projects" />
+  }
+
+  // Show error popup for existing users with fetch failures
+  if (shouldShowError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="p-8 text-center space-y-6 max-w-md" glow>
+          <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8 text-white" />
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-2xl font-bold text-white">Failed to Load Projects</h2>
+            <p className="text-gray-400">
+              We couldn't load your projects. Please check your connection and try again.
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            onClick={() => window.location.reload()}
+            icon={<RefreshCw className="w-4 h-4" />}
+          >
+            Retry
+          </Button>
+        </Card>
+      </div>
+    )
   }
 
   return (

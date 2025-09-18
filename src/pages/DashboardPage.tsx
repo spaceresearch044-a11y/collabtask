@@ -5,6 +5,8 @@ import { MainLayout } from '../components/layout/MainLayout'
 import { Dashboard } from '../components/dashboard/Dashboard'
 import { GettingStarted } from '../components/onboarding/GettingStarted'
 import { ProjectsPage } from '../components/pages/ProjectsPage'
+import { CalendarPage } from '../components/pages/CalendarPage'
+import { TeamPage } from '../components/pages/TeamPage'
 import { EmptyState } from '../components/dashboard/EmptyState'
 import { TasksPage } from '../components/pages/TasksPage'
 import { useProjects } from '../hooks/useProjects'
@@ -31,18 +33,32 @@ export const DashboardPage: React.FC = () => {
       case 'tasks':
         return <TasksPage />
       case 'calendar':
-        return <EmptyState type="calendar" />
+        return <CalendarPage />
       case 'team':
-        return <EmptyState type="team" />
-      case 'files':
-        return <EmptyState type="files" />
-      case 'reports':
-        return <EmptyState type="reports" />
-      case 'meeting':
+        return <TeamPage />
+      case 'meetings':
         return (
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-white mb-4">Meeting Room</h2>
             <p className="text-gray-400">Video conferencing feature coming soon!</p>
+          </div>
+        )
+      case 'files':
+        return <EmptyState type="files" />
+      case 'reports':
+        return <EmptyState type="reports" />
+      case 'notifications':
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Notifications</h2>
+            <p className="text-gray-400">Notification center coming soon!</p>
+          </div>
+        )
+      case 'achievements':
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Achievements</h2>
+            <p className="text-gray-400">Achievement system coming soon!</p>
           </div>
         )
       case 'settings':
