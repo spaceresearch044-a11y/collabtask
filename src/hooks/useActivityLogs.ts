@@ -35,10 +35,7 @@ export const useActivityLogs = () => {
     try {
       let query = supabase
         .from('activity_logs')
-        .select(`
-          *,
-          user_profile:profiles(full_name, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(limit)
 
@@ -53,7 +50,21 @@ export const useActivityLogs = () => {
       const { data, error } = await query
 
       if (error) throw error
-      setActivities(data || [])
+      
+      // Fetch user profiles separately to avoid RLS recursion
+      const userIds = [...new Set(data?.map(activity => activity.user_id) || [])]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds)
+      
+      // Combine the data
+      const activitiesWithProfiles = (data || []).map(activity => ({
+        ...activity,
+        user_profile: profiles?.find(profile => profile.id === activity.user_id)
+      }))
+      
+      setActivities(activitiesWithProfiles)
     } catch (error: any) {
       console.error('Error fetching activity logs:', error)
       setError(error.message)
