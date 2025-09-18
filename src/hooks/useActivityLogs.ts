@@ -35,7 +35,7 @@ export const useActivityLogs = () => {
     try {
       // First, get the user's accessible project IDs to avoid RLS recursion
       const { data: userProjects, error: projectsError } = await supabase
-        .rpc('get_user_projects_safe', { user_id: user.id })
+        .rpc('get_user_projects_safe', { user_uuid: user.id })
       
       if (projectsError) throw projectsError
       
