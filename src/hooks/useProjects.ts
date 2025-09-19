@@ -32,72 +32,41 @@ export const useProjects = () => {
     dispatch(setError(null))
     
     try {
-      // Fetch user's own projects and projects they're members of
-      const { data: ownProjects, error: ownError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('created_by', user.id)
+      // Use the get_user_projects RPC function to fetch all user projects
+      const { data: projects, error } = await supabase
+        .rpc('get_user_projects', { user_id: user.id })
 
-      const { data: memberProjects, error: memberError } = await supabase
-        .from('project_members')
-        .select(`
-          project_id,
-          role,
-          projects (*)
-        `)
-        .eq('user_id', user.id)
-
-      // Check if user has any existing projects/memberships first
-      const hasExistingData = (ownProjects && ownProjects.length > 0) || 
-                             (memberProjects && memberProjects.length > 0)
-
-      if (ownError && hasExistingData) {
-        console.error('Error fetching own projects:', ownError)
-        dispatch(setError('Failed to load your projects. Please try again.'))
+      if (error) {
+        console.error('Error fetching projects:', error)
+        // Only show error if this is not a new user
+        try {
+          const { data: existingProjects } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('created_by', user.id)
+            .limit(1)
+          
+          const { data: existingMemberships } = await supabase
+            .from('project_members')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1)
+          
+          if (existingProjects?.length || existingMemberships?.length) {
+            dispatch(setError('Failed to load your projects. Please try again.'))
+          }
+        } catch {
+          dispatch(setError('Failed to load your projects. Please try again.'))
+        }
         return
       }
-
-      if (memberError && hasExistingData) {
-        console.error('Error fetching member projects:', memberError)
-        dispatch(setError('Failed to load your projects. Please try again.'))
-        return
-      }
-
-      // Combine own projects and member projects
-      const allProjects = [
-        ...(ownProjects || []).map(p => ({ ...p, user_role: 'owner' })),
-        ...(memberProjects || []).map(mp => ({ 
-          ...mp.projects, 
-          user_role: mp.role 
-        }))
-      ]
 
       // Always set projects array, even if empty
-      dispatch(setProjects(allProjects))
+      dispatch(setProjects(projects || []))
 
     } catch (error: any) {
       console.error('Error fetching projects:', error)
-      // Only show error if this is not a new user (check if they have any data)
-      try {
-        const { data: existingProjects } = await supabase
-          .from('projects')
-          .select('id')
-          .eq('created_by', user.id)
-          .limit(1)
-        
-        const { data: existingMemberships } = await supabase
-          .from('project_members')
-          .select('id')
-          .eq('user_id', user.id)
-          .limit(1)
-        
-        if (existingProjects?.length || existingMemberships?.length) {
-          dispatch(setError('Failed to load your projects. Please try again.'))
-        }
-      } catch {
-        // If we can't check, assume it's a network error for existing user
-        dispatch(setError('Failed to load your projects. Please try again.'))
-      }
+      dispatch(setError('Failed to load your projects. Please try again.'))
     } finally {
       dispatch(setLoading(false))
     }

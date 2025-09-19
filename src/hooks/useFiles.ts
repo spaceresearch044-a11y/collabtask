@@ -172,7 +172,7 @@ export const useFiles = () => {
         .update({ task_id: taskId })
         .eq('id', fileId)
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 

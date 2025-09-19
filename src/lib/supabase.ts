@@ -48,6 +48,9 @@ export type Database = {
           description: string | null
           color: string
           created_by: string
+          deadline: string | null
+          project_type: 'individual' | 'team'
+          status: string
           created_at: string
           updated_at: string
         }
@@ -56,11 +59,17 @@ export type Database = {
           description?: string | null
           color?: string
           created_by: string
+          deadline?: string | null
+          project_type?: 'individual' | 'team'
+          status?: string
         }
         Update: {
           name?: string
           description?: string | null
           color?: string
+          deadline?: string | null
+          project_type?: 'individual' | 'team'
+          status?: string
         }
       }
       tasks: {
