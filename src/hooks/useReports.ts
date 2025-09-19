@@ -69,7 +69,7 @@ export const useReports = () => {
           content
         })
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 

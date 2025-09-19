@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 
 const getActivityIcon = (action: string) => {
-  switch (type) {
+  switch (action) {
     case 'completed_task': return CheckCircle
     case 'created_task': return CheckCircle
     case 'created_project': return FileText

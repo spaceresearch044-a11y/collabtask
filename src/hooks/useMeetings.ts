@@ -74,7 +74,7 @@ export const useMeetings = () => {
           meeting_url: `https://meet.collabtask.com/${Math.random().toString(36).substr(2, 9)}`
         })
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 
@@ -110,7 +110,7 @@ export const useMeetings = () => {
         .update(updates)
         .eq('id', meetingId)
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 

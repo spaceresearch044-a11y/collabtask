@@ -92,7 +92,7 @@ export const useCalendar = () => {
           event_type: eventData.event_type || 'custom'
         })
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 
@@ -128,7 +128,7 @@ export const useCalendar = () => {
         .update(updates)
         .eq('id', eventId)
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 

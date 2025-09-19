@@ -314,7 +314,7 @@ export const useProjects = () => {
         .update(updates)
         .eq('id', projectId)
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 
