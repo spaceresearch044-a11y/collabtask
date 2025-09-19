@@ -7,8 +7,13 @@ import { GettingStarted } from '../components/onboarding/GettingStarted'
 import { ProjectsPage } from '../components/pages/ProjectsPage'
 import { CalendarPage } from '../components/pages/CalendarPage'
 import { TeamPage } from '../components/pages/TeamPage'
-import { EmptyState } from '../components/dashboard/EmptyState'
 import { TasksPage } from '../components/pages/TasksPage'
+import { MeetingsPage } from '../components/pages/MeetingsPage'
+import { FilesPage } from '../components/pages/FilesPage'
+import { ReportsPage } from '../components/pages/ReportsPage'
+import { NotificationsPage } from '../components/pages/NotificationsPage'
+import { AchievementsPage } from '../components/pages/AchievementsPage'
+import { SettingsPage } from '../components/pages/SettingsPage'
 import { useProjects } from '../hooks/useProjects'
 
 export const DashboardPage: React.FC = () => {
@@ -37,37 +42,17 @@ export const DashboardPage: React.FC = () => {
       case 'team':
         return <TeamPage />
       case 'meetings':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Meeting Room</h2>
-            <p className="text-gray-400">Video conferencing feature coming soon!</p>
-          </div>
-        )
+        return <MeetingsPage />
       case 'files':
-        return <EmptyState type="files" />
+        return <FilesPage />
       case 'reports':
-        return <EmptyState type="reports" />
+        return <ReportsPage />
       case 'notifications':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Notifications</h2>
-            <p className="text-gray-400">Notification center coming soon!</p>
-          </div>
-        )
+        return <NotificationsPage />
       case 'achievements':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Achievements</h2>
-            <p className="text-gray-400">Achievement system coming soon!</p>
-          </div>
-        )
+        return <AchievementsPage />
       case 'settings':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Settings</h2>
-            <p className="text-gray-400">Settings panel coming soon!</p>
-          </div>
-        )
+        return <SettingsPage />
       default:
         return <Dashboard />
     }

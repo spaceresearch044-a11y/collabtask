@@ -26,7 +26,8 @@ const menuItems = [
     key: 'dashboard',
     color: 'text-blue-400', 
     hoverColor: 'hover:bg-blue-500/10',
-    gradient: 'from-blue-500 to-cyan-600'
+    gradient: 'from-blue-500 to-cyan-600',
+    glowColor: 'shadow-blue-500/25'
   },
   { 
     icon: FolderOpen, 
@@ -34,7 +35,8 @@ const menuItems = [
     key: 'projects',
     color: 'text-purple-400', 
     hoverColor: 'hover:bg-purple-500/10',
-    gradient: 'from-purple-500 to-violet-600'
+    gradient: 'from-purple-500 to-violet-600',
+    glowColor: 'shadow-purple-500/25'
   },
   { 
     icon: Calendar, 
@@ -42,7 +44,8 @@ const menuItems = [
     key: 'calendar',
     color: 'text-green-400', 
     hoverColor: 'hover:bg-green-500/10',
-    gradient: 'from-green-500 to-emerald-600'
+    gradient: 'from-green-500 to-emerald-600',
+    glowColor: 'shadow-green-500/25'
   },
   { 
     icon: Users, 
@@ -50,7 +53,8 @@ const menuItems = [
     key: 'team',
     color: 'text-orange-400', 
     hoverColor: 'hover:bg-orange-500/10',
-    gradient: 'from-orange-500 to-amber-600'
+    gradient: 'from-orange-500 to-amber-600',
+    glowColor: 'shadow-orange-500/25'
   },
   { 
     icon: Video, 
@@ -58,7 +62,8 @@ const menuItems = [
     key: 'meetings',
     color: 'text-pink-400', 
     hoverColor: 'hover:bg-pink-500/10',
-    gradient: 'from-pink-500 to-rose-600'
+    gradient: 'from-pink-500 to-rose-600',
+    glowColor: 'shadow-pink-500/25'
   },
   { 
     icon: FileText, 
@@ -66,7 +71,8 @@ const menuItems = [
     key: 'files',
     color: 'text-cyan-400', 
     hoverColor: 'hover:bg-cyan-500/10',
-    gradient: 'from-cyan-500 to-blue-600'
+    gradient: 'from-cyan-500 to-blue-600',
+    glowColor: 'shadow-cyan-500/25'
   },
   { 
     icon: BarChart3, 
@@ -74,7 +80,8 @@ const menuItems = [
     key: 'reports',
     color: 'text-yellow-400', 
     hoverColor: 'hover:bg-yellow-500/10',
-    gradient: 'from-yellow-500 to-orange-600'
+    gradient: 'from-yellow-500 to-orange-600',
+    glowColor: 'shadow-yellow-500/25'
   },
   { 
     icon: Bell, 
@@ -82,7 +89,8 @@ const menuItems = [
     key: 'notifications',
     color: 'text-red-400', 
     hoverColor: 'hover:bg-red-500/10',
-    gradient: 'from-red-500 to-pink-600'
+    gradient: 'from-red-500 to-pink-600',
+    glowColor: 'shadow-red-500/25'
   },
   { 
     icon: Trophy, 
@@ -90,7 +98,8 @@ const menuItems = [
     key: 'achievements',
     color: 'text-amber-400', 
     hoverColor: 'hover:bg-amber-500/10',
-    gradient: 'from-amber-500 to-yellow-600'
+    gradient: 'from-amber-500 to-yellow-600',
+    glowColor: 'shadow-amber-500/25'
   },
   { 
     icon: Settings, 
@@ -98,7 +107,8 @@ const menuItems = [
     key: 'settings',
     color: 'text-gray-400', 
     hoverColor: 'hover:bg-gray-500/10',
-    gradient: 'from-gray-500 to-gray-600'
+    gradient: 'from-gray-500 to-gray-600',
+    glowColor: 'shadow-gray-500/25'
   },
 ]
 
@@ -187,7 +197,7 @@ export const Sidebar: React.FC = () => {
             onClick={() => handleNavigation(item.key)}
             className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
               currentPage === item.key 
-                ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-blue-500/25` 
+                ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg ${item.glowColor}` 
                 : `text-gray-300 hover:text-white ${item.hoverColor}`
             } ${
               sidebarOpen ? 'justify-start' : 'justify-center'

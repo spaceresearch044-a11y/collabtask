@@ -32,13 +32,6 @@ export const useProjects = () => {
     dispatch(setError(null))
     
     try {
-      // First check if user profile exists and has ever created projects
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('has_ever_created_project')
-        .eq('id', user.id)
-        .maybeSingle()
-
       // Fetch user's own projects and projects they're members of
       const { data: ownProjects, error: ownError } = await supabase
         .from('projects')
@@ -54,15 +47,17 @@ export const useProjects = () => {
         `)
         .eq('user_id', user.id)
 
-      if (ownError && profile?.has_ever_created_project) {
-        // Only show error if user has created projects before
+      // Check if user has any existing projects/memberships first
+      const hasExistingData = (ownProjects && ownProjects.length > 0) || 
+                             (memberProjects && memberProjects.length > 0)
+
+      if (ownError && hasExistingData) {
         console.error('Error fetching own projects:', ownError)
         dispatch(setError('Failed to load your projects. Please try again.'))
         return
       }
 
-      if (memberError && profile?.has_ever_created_project) {
-        // Only show error if user has joined projects before
+      if (memberError && hasExistingData) {
         console.error('Error fetching member projects:', memberError)
         dispatch(setError('Failed to load your projects. Please try again.'))
         return
@@ -82,14 +77,25 @@ export const useProjects = () => {
 
     } catch (error: any) {
       console.error('Error fetching projects:', error)
-      // Only show error if user has created/joined projects before
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('has_ever_created_project')
-        .eq('id', user.id)
-        .maybeSingle()
-      
-      if (profile?.has_ever_created_project) {
+      // Only show error if this is not a new user (check if they have any data)
+      try {
+        const { data: existingProjects } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('created_by', user.id)
+          .limit(1)
+        
+        const { data: existingMemberships } = await supabase
+          .from('project_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1)
+        
+        if (existingProjects?.length || existingMemberships?.length) {
+          dispatch(setError('Failed to load your projects. Please try again.'))
+        }
+      } catch {
+        // If we can't check, assume it's a network error for existing user
         dispatch(setError('Failed to load your projects. Please try again.'))
       }
     } finally {
