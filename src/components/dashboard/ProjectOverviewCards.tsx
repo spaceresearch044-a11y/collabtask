@@ -20,7 +20,7 @@ export const ProjectOverviewCards: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<any>(null)
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'quickAdd'>('create')
   
-  const { projects, loading, fetchProjects } = useProjects()
+  const { projects, loading, fetchProjects, deleteProject } = useProjects()
 
   const handleCreateProject = () => {
     setModalMode('create')
@@ -43,6 +43,17 @@ export const ProjectOverviewCards: React.FC = () => {
   const handleProjectSuccess = () => {
     fetchProjects()
     setShowProjectModal(false)
+  }
+
+  const handleDeleteProject = async (project: any) => {
+    if (window.confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) {
+      try {
+        await deleteProject(project.id)
+        fetchProjects()
+      } catch (error) {
+        console.error('Error deleting project:', error)
+      }
+    }
   }
 
   const getColorClasses = (color: string) => {
@@ -215,6 +226,41 @@ export const ProjectOverviewCards: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Tasks Section */}
+                <div className="mt-4 pt-4 border-t border-gray-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-300">Recent Tasks</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        // TODO: Open task creation modal for this project
+                      }}
+                      icon={<Plus className="w-3 h-3" />}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {/* Mock tasks - replace with real data */}
+                    {[
+                      { title: 'Setup project structure', status: 'completed' },
+                      { title: 'Design user interface', status: 'in_progress' },
+                      { title: 'Implement authentication', status: 'todo' }
+                    ].slice(0, 3).map((task, taskIndex) => (
+                      <div key={taskIndex} className="flex items-center gap-2 text-xs">
+                        <div className={`w-2 h-2 rounded-full ${
+                          task.status === 'completed' ? 'bg-green-500' :
+                          task.status === 'in_progress' ? 'bg-blue-500' :
+                          'bg-gray-500'
+                        }`} />
+                        <span className="text-gray-400 truncate">{task.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Hover Glow Effect */}
                 <AnimatePresence>
                   {hoveredProject === project.id && (
@@ -248,7 +294,10 @@ export const ProjectOverviewCards: React.FC = () => {
                     <motion.button
                       whileHover={{ scale: 1.02, x: 4 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleEditProject(project)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditProject(project)
+                      }}
                       className="w-full flex items-center gap-3 p-3 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg text-purple-300 hover:text-purple-200 transition-all"
                     >
                       <Edit className="w-4 h-4" />
@@ -258,6 +307,10 @@ export const ProjectOverviewCards: React.FC = () => {
                     <motion.button
                       whileHover={{ scale: 1.02, x: 4 }}
                       whileTap={{ scale: 0.98 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteProject(project)
+                      }}
                       className="w-full flex items-center gap-3 p-3 bg-green-500/20 hover:bg-green-500/30 rounded-lg text-green-300 hover:text-green-200 transition-all"
                     >
                       <Users className="w-4 h-4" />

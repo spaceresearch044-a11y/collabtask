@@ -66,7 +66,7 @@ export const useActivityLogs = (projectId?: string) => {
   }
 
   const logActivity = async (activityData: {
-    action: ActivityLog['action']
+    action: 'created_project' | 'updated_project' | 'deleted_project' | 'created_task' | 'updated_task' | 'completed_task' | 'deleted_task' | 'uploaded_file' | 'scheduled_meeting' | 'joined_meeting' | 'created_event' | 'generated_report'
     description: string
     project_id?: string
     task_id?: string
@@ -77,7 +77,25 @@ export const useActivityLogs = (projectId?: string) => {
     if (!user) throw new Error('User not authenticated')
 
     try {
-      const { error } = await supabase.rpc('log_activity', {
+      const { error } = await supabase
+        .from('activity_logs')
+        .insert({
+          user_id: user.id,
+          activity_type: activityData.action as any,
+          description: activityData.description,
+          project_id: activityData.project_id || null,
+          task_id: activityData.task_id || null,
+          metadata: {
+            target_id: activityData.target_id,
+            target_type: activityData.target_type,
+            ...activityData.metadata
+          }
+        })
+
+      if (error) throw error
+
+      // Alternative using RPC if available
+      /* const { error } = await supabase.rpc('log_activity', {
         p_user_id: user.id,
         p_action: activityData.action,
         p_description: activityData.description,
@@ -86,7 +104,7 @@ export const useActivityLogs = (projectId?: string) => {
         p_target_id: activityData.target_id || null,
         p_target_type: activityData.target_type || null,
         p_metadata: activityData.metadata || {}
-      })
+      }) */
 
       if (error) throw error
 

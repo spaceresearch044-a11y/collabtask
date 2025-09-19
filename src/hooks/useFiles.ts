@@ -91,16 +91,20 @@ export const useFiles = () => {
       const { data, error } = await supabase
         .from('files')
         .insert({
+          uploaded_by: user.id,
+          uploaded_by: user.id,
           user_id: user.id,
           project_id: options.project_id || null,
           task_id: options.task_id || null,
           name: file.name,
+          url: publicUrl,
           file_url: publicUrl,
           file_size: file.size,
+          size: file.size,
           mime_type: file.type,
           version: 1,
           tags: options.tags || [],
-          is_public: options.is_public || false
+          is_public: options.is_public || false,
         })
         .select()
         .maybeSingle()

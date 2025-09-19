@@ -32,9 +32,18 @@ export const useProjects = () => {
     dispatch(setError(null))
     
     try {
-      // Use the get_user_projects RPC function to fetch all user projects
+      // Fetch projects using direct query instead of RPC
       const { data: projects, error } = await supabase
-        .rpc('get_user_projects', { user_id: user.id })
+        .from('projects')
+        .select(`
+          *,
+          project_members!inner(
+            role,
+            user_id
+          )
+        `)
+        .or(`created_by.eq.${user.id},project_members.user_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
 
       if (error) {
         console.error('Error fetching projects:', error)

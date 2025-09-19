@@ -108,6 +108,46 @@ export type Database = {
           position?: number
         }
       }
+      files: {
+        Row: {
+          id: string
+          name: string
+          file_size: number
+          size: bigint
+          mime_type: string
+          url: string
+          file_url: string
+          project_id: string | null
+          task_id: string | null
+          user_id: string
+          uploaded_by: string
+          version: number
+          tags: string[]
+          is_public: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          name: string
+          file_size: number
+          size: bigint
+          mime_type: string
+          url: string
+          file_url: string
+          project_id?: string | null
+          task_id?: string | null
+          user_id: string
+          uploaded_by: string
+          version?: number
+          tags?: string[]
+          is_public?: boolean
+        }
+        Update: {
+          name?: string
+          tags?: string[]
+          is_public?: boolean
+        }
+      }
     }
   }
 }

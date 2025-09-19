@@ -59,12 +59,16 @@ export const useTeam = () => {
     setError(null)
     
     try {
-      // Get all team members from user's teams
+      // Get all team members from user's teams with explicit join
       const { data, error } = await supabase
         .from('team_members')
         .select(`
-          *,
-          profiles (
+          id,
+          team_id,
+          user_id,
+          role,
+          joined_at,
+          profiles!team_members_user_id_fkey (
             id,
             full_name,
             email,
@@ -72,7 +76,6 @@ export const useTeam = () => {
             last_seen
           )
         `)
-        .in('team_id', await getUserTeamIds())
         .order('joined_at', { ascending: false })
 
       if (error) throw error

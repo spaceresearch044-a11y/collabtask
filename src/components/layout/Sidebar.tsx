@@ -214,11 +214,15 @@ export const Sidebar: React.FC = () => {
             
             <motion.div
               whileHover={{ 
-                rotate: [0, -10, 10, 0],
+                rotate: currentPage === item.key ? 360 : [0, -10, 10, 0],
                 scale: 1.2,
                 rotateY: 15
               }}
-              transition={{ duration: 0.5 }}
+              transition={{ 
+                duration: currentPage === item.key ? 2 : 0.5,
+                repeat: currentPage === item.key ? Infinity : 0,
+                ease: currentPage === item.key ? 'linear' : 'easeInOut'
+              }}
               className={`relative z-10 ${
                 currentPage === item.key ? 'text-white' : item.color
               } group-hover:scale-110 transition-all duration-300`}

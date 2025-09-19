@@ -2,6 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { Users, Circle, MessageCircle, Video, Phone } from 'lucide-react'
 import { Card } from '../ui/Card'
+import { useTeam } from '../../hooks/useTeam'
 
 interface TeamMember {
   id: string
@@ -85,7 +86,30 @@ const getStatusText = (member: TeamMember) => {
 }
 
 export const TeamPresence: React.FC = () => {
+  const { members, loading } = useTeam()
+  
+  // Convert team members to the expected format
+  const teamMembers: TeamMember[] = members.map(member => ({
+    id: member.id,
+    name: member.full_name || member.email,
+    role: member.role === 'admin' ? 'Product Manager' : 
+          member.role === 'lead' ? 'Team Lead' : 'Team Member',
+    avatar: (member.full_name?.charAt(0) || member.email.charAt(0)).toUpperCase(),
+    status: member.is_online ? 'online' : 'offline',
+    lastSeen: member.last_seen ? new Date(member.last_seen).toLocaleString() : 'Unknown'
+  }))
+  
   const onlineMembers = teamMembers.filter(m => m.status === 'online' || m.status === 'busy')
+
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </Card>
+    )
+  }
 
   return (
     <Card className="p-6">

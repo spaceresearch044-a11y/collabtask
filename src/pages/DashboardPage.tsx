@@ -18,11 +18,13 @@ import { useProjects } from '../hooks/useProjects'
 
 export const DashboardPage: React.FC = () => {
   const { currentPage } = useSelector((state: RootState) => state.ui)
+  const { profile } = useSelector((state: RootState) => state.auth)
   const { projects, loading: projectsLoading, error: projectsError } = useProjects()
   
   const renderPageContent = () => {
-    // Show onboarding for new users with no projects (but only after loading is complete)
-    if (!projectsLoading && projects.length === 0 && currentPage === 'dashboard' && !projectsError) {
+    // Show onboarding for new users with no projects and no creation history
+    if (!projectsLoading && projects.length === 0 && currentPage === 'dashboard' && 
+        !projectsError && !profile?.has_ever_created_project) {
       return (
         <GettingStarted
           onJoinTeam={() => {}}
