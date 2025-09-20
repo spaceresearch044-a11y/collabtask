@@ -49,7 +49,6 @@ export const ProjectOverviewCards: React.FC = () => {
     if (window.confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) {
       try {
         await deleteProject(project.id)
-        fetchProjects()
       } catch (error) {
         console.error('Error deleting project:', error)
       }
@@ -129,7 +128,7 @@ export const ProjectOverviewCards: React.FC = () => {
             <motion.div
               className="relative preserve-3d cursor-pointer"
               whileHover={{ 
-                rotateY: flippedProject === project.id ? 180 : 5,
+                rotateY: flippedProject === project.id ? 180 : 2,
                 rotateX: 2,
                 z: 50
               }}
@@ -323,6 +322,15 @@ export const ProjectOverviewCards: React.FC = () => {
                   <motion.div
                     whileHover={{ rotate: 90 }}
                     className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-purple-500/30 transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      // TODO: Show project actions menu
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      // TODO: Navigate to project detail page
+                      console.log('Opening project:', project.id)
+                    }}
+                    }}
                   >
                     <Plus className="w-6 h-6 text-blue-400" />
                   </motion.div>

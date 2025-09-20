@@ -93,7 +93,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       }
       
       onSuccess()
-      handleClose()
     } catch (error) {
       console.error('Error with task:', error)
     }

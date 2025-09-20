@@ -53,6 +53,9 @@ export const useTasks = (projectId?: string) => {
     if (!user) throw new Error('User not authenticated')
 
     try {
+      setLoading(true)
+      setError(null)
+      
       const { data, error } = await supabase
         .from('tasks')
         .insert([{
@@ -61,37 +64,84 @@ export const useTasks = (projectId?: string) => {
           position: tasks.length
         }])
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       
       setTasks(prev => [...prev, data])
+      
+      // Log activity
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'created_task',
+            description: `Created task "${taskData.title}"`,
+            project_id: taskData.project_id,
+            metadata: { priority: taskData.priority, status: taskData.status }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
+      
       return data
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create task')
       throw err instanceof Error ? err : new Error('Failed to create task')
+    } finally {
+      setLoading(false)
     }
   }
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
     try {
+      setLoading(true)
+      setError(null)
+      
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
         .eq('id', id)
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 
       setTasks(prev => prev.map(t => t.id === id ? data : t))
+      
+      // Log activity for status changes
+      if (updates.status) {
+        try {
+          await supabase
+            .from('activity_logs')
+            .insert({
+              user_id: user!.id,
+              activity_type: updates.status === 'completed' ? 'completed_task' : 'updated_task',
+              description: `${updates.status === 'completed' ? 'Completed' : 'Updated'} task "${data.title}"`,
+              project_id: data.project_id,
+              task_id: id,
+              metadata: { new_status: updates.status }
+            })
+        } catch (logError) {
+          console.warn('Activity logging failed:', logError)
+        }
+      }
+      
       return data
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update task')
       throw err instanceof Error ? err : new Error('Failed to update task')
+    } finally {
+      setLoading(false)
     }
   }
 
   const deleteTask = async (id: string) => {
     try {
+      setLoading(true)
+      setError(null)
+      
       const { error } = await supabase
         .from('tasks')
         .delete()
@@ -101,7 +151,10 @@ export const useTasks = (projectId?: string) => {
 
       setTasks(prev => prev.filter(t => t.id !== id))
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete task')
       throw err instanceof Error ? err : new Error('Failed to delete task')
+    } finally {
+      setLoading(false)
     }
   }
 

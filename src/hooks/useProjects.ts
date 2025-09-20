@@ -44,6 +44,9 @@ export const useProjects = () => {
     if (!user) throw new Error('User not authenticated')
 
     try {
+      setLoading(true)
+      setError(null)
+      
       const { data, error } = await supabase
         .from('projects')
         .insert([{
@@ -51,14 +54,32 @@ export const useProjects = () => {
           created_by: user.id
         }])
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       
       setProjects(prev => [data, ...prev])
+      
+      // Log activity
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'created_project',
+            description: `Created project "${projectData.name}"`,
+            metadata: { project_type: projectData.project_type }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
+      
       return data
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create project')
       throw err instanceof Error ? err : new Error('Failed to create project')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -90,6 +111,20 @@ export const useProjects = () => {
       if (error) throw error
 
       setProjects(prev => prev.filter(p => p.id !== id))
+      
+      // Log activity
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user!.id,
+            activity_type: 'deleted_project',
+            description: `Deleted project`,
+            metadata: { project_id: id }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
     } catch (err) {
       throw err instanceof Error ? err : new Error('Failed to delete project')
     }

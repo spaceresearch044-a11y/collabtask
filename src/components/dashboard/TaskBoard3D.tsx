@@ -234,6 +234,7 @@ export const TaskBoard3D: React.FC = () => {
       refetch()
     }
     setShowTaskModal(false)
+    setSelectedTask(null)
   }
 
   if (loading) {
@@ -483,8 +484,7 @@ export const TaskBoard3D: React.FC = () => {
                     variant="primary"
                     size="sm"
                     onClick={() => {
-                      // TODO: Open task edit modal
-                      console.log('Edit task:', selectedTask.id)
+                      setShowTaskModal(true)
                     }}
                   >
                     Edit Task
@@ -503,6 +503,8 @@ export const TaskBoard3D: React.FC = () => {
           onClose={() => setShowTaskModal(false)}
           onSuccess={handleTaskSuccess}
           projectId={selectedProject.id}
+          task={selectedTask}
+          mode={selectedTask ? 'edit' : 'create'}
         />
       )}
     </div>
