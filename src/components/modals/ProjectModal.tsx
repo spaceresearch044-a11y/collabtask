@@ -87,7 +87,6 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       }
       
       onSuccess()
-      handleClose()
     } catch (error) {
       console.error('Error with project:', error)
     }

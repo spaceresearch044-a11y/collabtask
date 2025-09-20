@@ -11,8 +11,8 @@ interface EmptyStateProps {
 const emptyStateConfig = {
   projects: {
     icon: FolderOpen,
-    title: 'No projects yet',
-    description: 'Create your first project to get started with organizing your work.',
+    title: 'No projects found',
+    description: 'Create your first project to start organizing your work and collaborating with your team.',
     actionText: 'Create Project',
     gradient: 'from-blue-500 to-purple-600'
   },

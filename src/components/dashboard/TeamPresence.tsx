@@ -217,6 +217,11 @@ export const TeamPresence: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={(e) => {
+              e.stopPropagation()
+              // TODO: Open team management modal
+              console.log('Manage team')
+            }}
             className="flex items-center justify-center gap-2 p-3 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg text-purple-300 hover:text-purple-200 transition-all text-sm"
           >
             <Users className="w-4 h-4" />

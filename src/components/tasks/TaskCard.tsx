@@ -144,7 +144,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, projectMembers = [], o
                   <button
                     onClick={() => {
                       setShowMenu(false)
-                      // TODO: Open edit modal
+                      // TODO: Implement edit task modal
+                      console.log('Edit task:', task.id)
                     }}
                     className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2"
                   >
