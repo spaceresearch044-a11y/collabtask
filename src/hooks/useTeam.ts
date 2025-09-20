@@ -36,14 +36,35 @@ export const useTeam = () => {
     setError(null)
     
     try {
-      const { data, error } = await supabase
+      // First get teams created by user
+      const { data: createdTeams, error: createdError } = await supabase
         .from('teams')
         .select('*')
-        .or(`created_by.eq.${user.id},id.in.(${await getUserTeamIds()})`)
+        .eq('created_by', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setTeams(data || [])
+      if (createdError) throw createdError
+
+      // Then get teams user is a member of
+      const userTeamIds = await getUserTeamIds()
+      let memberTeams: any[] = []
+      
+      if (userTeamIds.length > 0) {
+        const { data: memberTeamsData, error: memberError } = await supabase
+          .from('teams')
+          .select('*')
+          .in('id', userTeamIds)
+          .neq('created_by', user.id) // Avoid duplicates
+          .order('created_at', { ascending: false })
+
+        if (memberError) throw memberError
+        memberTeams = memberTeamsData || []
+      }
+
+      // Combine both arrays
+      const allTeams = [...(createdTeams || []), ...memberTeams]
+      setTeams(allTeams)
+
     } catch (error: any) {
       console.error('Error fetching teams:', error)
       setError(error.message)
@@ -66,7 +87,7 @@ export const useTeam = () => {
           user_id,
           role,
           joined_at,
-          profiles!project_members_user_id_fkey (
+          profiles (
             id,
             full_name,
             email,

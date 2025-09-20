@@ -205,13 +205,13 @@ export const TaskBoard3D: React.FC = () => {
   
   // Use first project for demo, in real app this would be selected
   const selectedProject = projects[0]
-  const { tasks, loading, fetchTasks } = useTasks(selectedProject?.id)
+  const { tasks, loading, refetch } = useTasks(selectedProject?.id)
 
   useEffect(() => {
     if (selectedProject?.id) {
-      fetchTasks(selectedProject.id)
+      refetch()
     }
-  }, [selectedProject?.id])
+  }, [selectedProject?.id, refetch])
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -231,7 +231,7 @@ export const TaskBoard3D: React.FC = () => {
 
   const handleTaskSuccess = () => {
     if (selectedProject?.id) {
-      fetchTasks(selectedProject.id)
+      refetch()
     }
     setShowTaskModal(false)
   }
