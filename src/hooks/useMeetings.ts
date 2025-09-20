@@ -79,14 +79,19 @@ export const useMeetings = () => {
       if (error) throw error
 
       // Log activity
-      await supabase.rpc('log_activity', {
-        p_user_id: user.id,
-        p_action: 'scheduled_meeting',
-        p_description: `Scheduled meeting "${meetingData.title}"`,
-        p_project_id: meetingData.project_id || null,
-        p_target_id: data.id,
-        p_target_type: 'meeting'
-      })
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'scheduled_meeting',
+            description: `Scheduled meeting "${meetingData.title}"`,
+            project_id: meetingData.project_id || null,
+            metadata: { duration: meetingData.duration }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
 
       setMeetings(prev => [...prev, data])
       return data
@@ -138,14 +143,19 @@ export const useMeetings = () => {
       }
 
       // Log activity
-      await supabase.rpc('log_activity', {
-        p_user_id: user.id,
-        p_action: 'joined_meeting',
-        p_description: `Joined meeting "${meeting?.title}"`,
-        p_project_id: meeting?.project_id || null,
-        p_target_id: meetingId,
-        p_target_type: 'meeting'
-      })
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'joined_meeting',
+            description: `Joined meeting "${meeting?.title}"`,
+            project_id: meeting?.project_id || null,
+            metadata: { meeting_id: meetingId }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
 
       // Return meeting URL for joining
       return meeting?.meeting_url

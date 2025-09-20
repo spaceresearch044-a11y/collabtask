@@ -74,14 +74,19 @@ export const useReports = () => {
       if (error) throw error
 
       // Log activity
-      await supabase.rpc('log_activity', {
-        p_user_id: user.id,
-        p_action: 'generated_report',
-        p_description: `Generated ${reportData.type} report "${reportData.title}"`,
-        p_project_id: reportData.project_id || null,
-        p_target_id: data.id,
-        p_target_type: 'report'
-      })
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'generated_report',
+            description: `Generated ${reportData.type} report "${reportData.title}"`,
+            project_id: reportData.project_id || null,
+            metadata: { report_type: reportData.type }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
 
       setReports(prev => [data, ...prev])
       return data

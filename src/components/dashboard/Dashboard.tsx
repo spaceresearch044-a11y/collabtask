@@ -17,7 +17,7 @@ import { Button } from '../ui/Button'
 export const Dashboard: React.FC = () => {
   const { profile } = useSelector((state: RootState) => state.auth)
   const { currentView } = useSelector((state: RootState) => state.ui)
-  const { projects, loading, error } = useProjects()
+  const { projects, loading, error, fetchProjects } = useProjects()
 
   // Show error popup only for users who have created projects before
   const shouldShowError = error && profile?.has_ever_created_project
@@ -43,7 +43,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <Button
             variant="primary"
-            onClick={() => window.location.reload()}
+            onClick={() => fetchProjects()}
             icon={<RefreshCw className="w-4 h-4" />}
           >
             Retry

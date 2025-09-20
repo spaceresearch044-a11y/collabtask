@@ -32,41 +32,13 @@ export const useProjects = () => {
     dispatch(setError(null))
     
     try {
-      // Fetch projects using direct query instead of RPC
+      // Use the database function to avoid PGRST100 errors
       const { data: projects, error } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          project_members!inner(
-            role,
-            user_id
-          )
-        `)
-        .or(`created_by.eq.${user.id},project_members.user_id.eq.${user.id}`)
-        .order('created_at', { ascending: false })
+        .rpc('get_user_projects', { user_uuid: user.id })
 
       if (error) {
         console.error('Error fetching projects:', error)
-        // Only show error if this is not a new user
-        try {
-          const { data: existingProjects } = await supabase
-            .from('projects')
-            .select('id')
-            .eq('created_by', user.id)
-            .limit(1)
-          
-          const { data: existingMemberships } = await supabase
-            .from('project_members')
-            .select('id')
-            .eq('user_id', user.id)
-            .limit(1)
-          
-          if (existingProjects?.length || existingMemberships?.length) {
-            dispatch(setError('Failed to load your projects. Please try again.'))
-          }
-        } catch {
-          dispatch(setError('Failed to load your projects. Please try again.'))
-        }
+        dispatch(setError('Failed to load your projects. Please try again.'))
         return
       }
 
@@ -159,13 +131,15 @@ export const useProjects = () => {
 
       // Log activity
       try {
-        await supabase.rpc('log_activity', {
-          p_user_id: user.id,
-          p_action: 'created_project',
-          p_description: `Created project "${project.name}"`,
-          p_project_id: project.id,
-          p_target_id: project.id,
-          p_target_type: 'project'
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'created_project',
+            description: `Created project "${project.name}"`,
+            project_id: project.id,
+            metadata: { project_type: project.project_type }
+          })
         })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)

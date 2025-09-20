@@ -59,16 +59,14 @@ export const useTeam = () => {
     setError(null)
     
     try {
-      // Get all team members from user's teams with explicit join
+      // Get team members from projects the user has access to
       const { data, error } = await supabase
-        .from('team_members')
+        .from('project_members')
         .select(`
-          id,
-          team_id,
           user_id,
           role,
           joined_at,
-          profiles!team_members_user_id_fkey (
+          profiles!project_members_user_id_fkey (
             id,
             full_name,
             email,
@@ -76,6 +74,7 @@ export const useTeam = () => {
             last_seen
           )
         `)
+        .in('project_id', await getUserProjectIds())
         .order('joined_at', { ascending: false })
 
       if (error) throw error
@@ -99,15 +98,34 @@ export const useTeam = () => {
     }
   }
 
+  const getUserProjectIds = async (): Promise<string[]> => {
+    if (!user) return []
+    
+    try {
+      const { data } = await supabase
+        .rpc('get_user_projects', { user_uuid: user.id })
+      
+      return data?.map(p => p.id) || []
+    } catch (error) {
+      console.error('Error getting user project IDs:', error)
+      return []
+    }
+  }
+
   const getUserTeamIds = async (): Promise<string[]> => {
     if (!user) return []
     
-    const { data } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', user.id)
-    
-    return data?.map(tm => tm.team_id) || []
+    try {
+      const { data } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id)
+      
+      return data?.map(tm => tm.team_id) || []
+    } catch (error) {
+      console.error('Error getting team IDs:', error)
+      return []
+    }
   }
 
   const inviteMember = async (email: string, role: 'admin' | 'lead' | 'member' = 'member') => {

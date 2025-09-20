@@ -142,14 +142,16 @@ export const useTasks = (projectId?: string) => {
 
       // Log activity
       try {
-        await supabase.rpc('log_activity', {
-          p_user_id: user.id,
-          p_action: 'created_task',
-          p_description: `Created task "${task.title}"`,
-          p_project_id: taskData.project_id,
-          p_task_id: task.id,
-          p_target_id: task.id,
-          p_target_type: 'task'
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'created_task',
+            description: `Created task "${task.title}"`,
+            project_id: taskData.project_id,
+            task_id: task.id,
+            metadata: { priority: task.priority, status: task.status }
+          })
         })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
@@ -214,14 +216,16 @@ export const useTasks = (projectId?: string) => {
       // Log activity for status changes
       if (updates.status === 'completed') {
         try {
-          await supabase.rpc('log_activity', {
-            p_user_id: user.id,
-            p_action: 'completed_task',
-            p_description: `Completed task "${data.title}"`,
-            p_project_id: data.project_id,
-            p_task_id: data.id,
-            p_target_id: data.id,
-            p_target_type: 'task'
+          await supabase
+            .from('activity_logs')
+            .insert({
+              user_id: user.id,
+              activity_type: 'completed_task',
+              description: `Completed task "${data.title}"`,
+              project_id: data.project_id,
+              task_id: data.id,
+              metadata: { previous_status: updates.status }
+            })
           })
         } catch (logError) {
           console.warn('Activity logging failed:', logError)

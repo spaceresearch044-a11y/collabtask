@@ -1,4 +1,5 @@
 import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   FolderOpen, 
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
+import { ProjectModal } from '../modals/ProjectModal'
 
 interface EmptyStateProps {
   type: 'projects' | 'tasks' | 'calendar' | 'team' | 'files' | 'reports'
@@ -64,36 +66,44 @@ const emptyStateConfig = {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ type, onAction }) => {
+  const [showProjectModal, setShowProjectModal] = useState(false)
   const config = emptyStateConfig[type]
   const Icon = config.icon
 
+  const handleAction = () => {
+    if (type === 'projects') {
+      setShowProjectModal(true)
+    } else if (onAction) {
+      onAction()
+    }
+  }
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="flex items-center justify-center min-h-[400px] p-8"
-    >
-      <Card className="p-12 text-center max-w-md mx-auto" glow>
-        <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="space-y-6"
-        >
-          {/* Icon */}
-          <div className={`w-20 h-20 bg-gradient-to-r ${config.color} rounded-2xl flex items-center justify-center mx-auto`}>
-            <Icon className="w-10 h-10 text-white" />
-          </div>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-center min-h-[400px] p-8"
+      >
+        <Card className="p-12 text-center max-w-md mx-auto" glow>
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="space-y-6"
+          >
+            {/* Icon */}
+            <div className={`w-20 h-20 bg-gradient-to-r ${config.color} rounded-2xl flex items-center justify-center mx-auto`}>
+              <Icon className="w-10 h-10 text-white" />
+            </div>
 
-          {/* Content */}
-          <div className="space-y-3">
-            <h3 className="text-2xl font-bold text-white">{config.title}</h3>
-            <p className="text-gray-400 leading-relaxed">{config.description}</p>
-          </div>
+            {/* Content */}
+            <div className="space-y-3">
+              <h3 className="text-2xl font-bold text-white">{config.title}</h3>
+              <p className="text-gray-400 leading-relaxed">{config.description}</p>
+            </div>
 
-          {/* Action Button */}
-          {onAction && (
+            {/* Action Button */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -101,39 +111,51 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ type, onAction }) => {
             >
               <Button
                 variant="primary"
-                onClick={onAction}
+                onClick={handleAction}
                 icon={<Plus className="w-4 h-4" />}
                 className="mt-4"
               >
                 {config.actionText}
               </Button>
             </motion.div>
-          )}
 
-          {/* Decorative Elements */}
-          <div className="relative">
-            {[...Array(3)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
-                style={{
-                  left: `${30 + i * 20}%`,
-                  top: `${-10 + i * 5}px`,
-                }}
-                animate={{
-                  y: [-5, 5, -5],
-                  opacity: [0.3, 0.8, 0.3],
-                }}
-                transition={{
-                  duration: 2 + i * 0.5,
-                  repeat: Infinity,
-                  delay: i * 0.3,
-                }}
-              />
-            ))}
-          </div>
-        </motion.div>
-      </Card>
-    </motion.div>
+            {/* Decorative Elements */}
+            <div className="relative">
+              {[...Array(3)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
+                  style={{
+                    left: `${30 + i * 20}%`,
+                    top: `${-10 + i * 5}px`,
+                  }}
+                  animate={{
+                    y: [-5, 5, -5],
+                    opacity: [0.3, 0.8, 0.3],
+                  }}
+                  transition={{
+                    duration: 2 + i * 0.5,
+                    repeat: Infinity,
+                    delay: i * 0.3,
+                  }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        </Card>
+      </motion.div>
+      {/* Project Modal */}
+      {showProjectModal && (
+        <ProjectModal
+          isOpen={showProjectModal}
+          onClose={() => setShowProjectModal(false)}
+          onSuccess={() => {
+            setShowProjectModal(false)
+            window.location.reload() // Refresh to show new project
+          }}
+          mode="create"
+        />
+      )}
+    </>
   )
 }

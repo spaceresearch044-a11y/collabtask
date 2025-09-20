@@ -1,4 +1,5 @@
 import React from 'react'
+import React, { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Users, Circle, MessageCircle, Video, Phone } from 'lucide-react'
 import { Card } from '../ui/Card'
@@ -86,14 +87,17 @@ const getStatusText = (member: TeamMember) => {
 }
 
 export const TeamPresence: React.FC = () => {
-  const { members, loading } = useTeam()
+  const { members, loading, fetchMembers } = useTeam()
+  
+  useEffect(() => {
+    fetchMembers()
+  }, [])
   
   // Convert team members to the expected format
   const teamMembers: TeamMember[] = members.map(member => ({
     id: member.id,
     name: member.full_name || member.email,
-    role: member.role === 'admin' ? 'Product Manager' : 
-          member.role === 'lead' ? 'Team Lead' : 'Team Member',
+    role: member.role === 'lead' ? 'Team Lead' : 'Team Member',
     avatar: (member.full_name?.charAt(0) || member.email.charAt(0)).toUpperCase(),
     status: member.is_online ? 'online' : 'offline',
     lastSeen: member.last_seen ? new Date(member.last_seen).toLocaleString() : 'Unknown'

@@ -92,34 +92,33 @@ export const useFiles = () => {
         .from('files')
         .insert({
           uploaded_by: user.id,
-          uploaded_by: user.id,
           user_id: user.id,
           project_id: options.project_id || null,
           task_id: options.task_id || null,
           name: file.name,
           url: publicUrl,
-          file_url: publicUrl,
-          file_size: file.size,
           size: file.size,
           mime_type: file.type,
-          version: 1,
-          tags: options.tags || [],
-          is_public: options.is_public || false,
         })
         .select()
         .maybeSingle()
 
       if (error) throw error
 
-      // Log activity
-      await supabase.rpc('log_activity', {
-        p_user_id: user.id,
-        p_action: 'uploaded_file',
-        p_description: `Uploaded file "${file.name}"`,
-        p_project_id: options.project_id || null,
-        p_target_id: data.id,
-        p_target_type: 'file'
-      })
+      // Log activity (optional, ignore errors)
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'uploaded_file',
+            description: `Uploaded file "${file.name}"`,
+            project_id: options.project_id || null,
+            metadata: { file_id: data.id, file_name: file.name }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
 
       setFiles(prev => [data, ...prev])
       return data

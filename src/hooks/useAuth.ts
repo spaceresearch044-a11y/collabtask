@@ -9,8 +9,20 @@ export const useAuth = () => {
   const { user, profile, loading, error } = useSelector((state: RootState) => state.auth)
 
   useEffect(() => {
+    let mounted = true
+    
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return
+      
+      if (error) {
+        console.error('Session error:', error)
+        // Clear invalid session
+        localStorage.clear()
+        dispatch(clearAuth())
+        return
+      }
+      
       dispatch(setUser(session?.user || null))
       if (session?.user) {
         fetchProfile(session.user.id)
@@ -23,6 +35,15 @@ export const useAuth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+      
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        // Handle invalid refresh token
+        localStorage.clear()
+        dispatch(clearAuth())
+        return
+      }
+      
       dispatch(setUser(session?.user || null))
       if (session?.user) {
         fetchProfile(session.user.id)
@@ -31,11 +52,17 @@ export const useAuth = () => {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [dispatch])
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Ensure profile exists first
+      await supabase.rpc('ensure_user_profile_exists', { user_id: userId })
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -49,6 +76,7 @@ export const useAuth = () => {
         dispatch(setProfile(data))
       }
     } catch (error: any) {
+      console.error('Profile fetch error:', error)
       dispatch(setError(error.message))
     } finally {
       dispatch(setLoading(false))
@@ -58,10 +86,25 @@ export const useAuth = () => {
   const signIn = async (email: string, password: string) => {
     dispatch(setLoading(true))
     dispatch(setError(null))
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      })
+      
+      if (error) {
+        if (error.message.includes('refresh_token_not_found')) {
+          localStorage.clear()
+          dispatch(setError('Session expired. Please sign in again.'))
+        } else {
+          dispatch(setError(error.message))
+        }
+      }
+    } catch (error: any) {
       dispatch(setError(error.message))
     }
+    
     dispatch(setLoading(false))
   }
 
@@ -69,28 +112,37 @@ export const useAuth = () => {
     dispatch(setLoading(true))
     dispatch(setError(null))
     
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        data: {
-          full_name: fullName
+    try {
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: {
+            full_name: fullName
+          }
         }
+      })
+      
+      if (error) {
+        dispatch(setError(error.message))
+      } else if (data.user && !data.user.email_confirmed_at) {
+        // For email confirmation flow, show success message
+        dispatch(setError('Please check your email and click the confirmation link to complete your registration.'))
       }
-    })
-    
-    if (error) {
+    } catch (error: any) {
       dispatch(setError(error.message))
-    } else if (data.user && !data.user.email_confirmed_at) {
-      // For email confirmation flow, show success message
-      dispatch(setError('Please check your email and click the confirmation link to complete your registration.'))
     }
     
     dispatch(setLoading(false))
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+    localStorage.clear()
     dispatch(clearAuth())
   }
 

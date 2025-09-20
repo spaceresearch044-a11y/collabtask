@@ -97,14 +97,19 @@ export const useCalendar = () => {
       if (error) throw error
 
       // Log activity
-      await supabase.rpc('log_activity', {
-        p_user_id: user.id,
-        p_action: 'created_event',
-        p_description: `Created calendar event "${eventData.title}"`,
-        p_project_id: eventData.project_id || null,
-        p_target_id: data.id,
-        p_target_type: 'calendar_event'
-      })
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            activity_type: 'created_event',
+            description: `Created calendar event "${eventData.title}"`,
+            project_id: eventData.project_id || null,
+            metadata: { event_type: eventData.event_type }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
 
       setEvents(prev => [...prev, data])
       return data
