@@ -105,24 +105,20 @@ export const useTasks = (projectId?: string) => {
     }
   }
 
-  const moveTask = async (taskId: string, newStatus: Task['status'], newPosition: number) => {
+  const updateTaskPosition = async (taskId: string, newPosition: number) => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tasks')
-        .update({ 
-          status: newStatus, 
-          position: newPosition 
-        })
+        .update({ position: newPosition })
         .eq('id', taskId)
-        .select()
-        .single()
 
       if (error) throw error
 
-      setTasks(prev => prev.map(t => t.id === taskId ? data : t))
-      return data
+      setTasks(prev => prev.map(t => 
+        t.id === taskId ? { ...t, position: newPosition } : t
+      ).sort((a, b) => a.position - b.position))
     } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to move task')
+      throw err instanceof Error ? err : new Error('Failed to update task position')
     }
   }
 
@@ -137,7 +133,7 @@ export const useTasks = (projectId?: string) => {
     createTask,
     updateTask,
     deleteTask,
-    moveTask,
+    updateTaskPosition,
     refetch: fetchTasks
   }
 }
