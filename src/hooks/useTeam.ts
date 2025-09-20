@@ -13,65 +13,11 @@ interface TeamMember {
   last_seen: string
 }
 
-interface Team {
-  id: string
-  name: string
-  code: string
-  created_by: string
-  created_at: string
-  member_count: number
-}
-
 export const useTeam = () => {
-  const [teams, setTeams] = useState<Team[]>([])
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { user } = useSelector((state: RootState) => state.auth)
-
-  const fetchTeams = async () => {
-    if (!user) return
-
-    setLoading(true)
-    setError(null)
-    
-    try {
-      // First get teams created by user
-      const { data: createdTeams, error: createdError } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('created_by', user.id)
-        .order('created_at', { ascending: false })
-
-      if (createdError) throw createdError
-
-      // Then get teams user is a member of
-      const userTeamIds = await getUserTeamIds()
-      let memberTeams: any[] = []
-      
-      if (userTeamIds.length > 0) {
-        const { data: memberTeamsData, error: memberError } = await supabase
-          .from('teams')
-          .select('*')
-          .in('id', userTeamIds)
-          .neq('created_by', user.id) // Avoid duplicates
-          .order('created_at', { ascending: false })
-
-        if (memberError) throw memberError
-        memberTeams = memberTeamsData || []
-      }
-
-      // Combine both arrays
-      const allTeams = [...(createdTeams || []), ...memberTeams]
-      setTeams(allTeams)
-
-    } catch (error: any) {
-      console.error('Error fetching teams:', error)
-      setError(error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const fetchMembers = async () => {
     if (!user) return
@@ -80,35 +26,52 @@ export const useTeam = () => {
     setError(null)
     
     try {
+      // Get project IDs first
+      const projectIds = await getUserProjectIds()
+      
+      if (projectIds.length === 0) {
+        setMembers([])
+        return
+      }
+
       // Get team members from projects the user has access to
       const { data, error } = await supabase
         .from('project_members')
-        .select(`
-          user_id,
-          role,
-          joined_at,
-          profiles (
-            id,
-            full_name,
-            email,
-            is_online,
-            last_seen
-          )
-        `)
-        .in('project_id', await getUserProjectIds())
+        .select('user_id, role, joined_at')
+        .in('project_id', projectIds)
         .order('joined_at', { ascending: false })
 
       if (error) throw error
       
-      const formattedMembers = data?.map(member => ({
-        id: member.profiles.id,
-        full_name: member.profiles.full_name,
-        email: member.profiles.email,
-        role: member.role,
-        joined_at: member.joined_at,
-        is_online: member.profiles.is_online,
-        last_seen: member.profiles.last_seen
-      })) || []
+      // Get unique user IDs
+      const userIds = [...new Set(data?.map(member => member.user_id) || [])]
+      
+      if (userIds.length === 0) {
+        setMembers([])
+        return
+      }
+
+      // Fetch profile data separately
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, is_online, last_seen')
+        .in('id', userIds)
+
+      if (profileError) throw profileError
+
+      // Combine member data with profile data
+      const formattedMembers = data?.map(member => {
+        const profile = profiles?.find(p => p.id === member.user_id)
+        return {
+          id: member.user_id,
+          full_name: profile?.full_name || null,
+          email: profile?.email || '',
+          role: member.role,
+          joined_at: member.joined_at,
+          is_online: profile?.is_online || false,
+          last_seen: profile?.last_seen || new Date().toISOString()
+        }
+      }).filter(member => member.email) || []
 
       setMembers(formattedMembers)
     } catch (error: any) {
@@ -123,28 +86,24 @@ export const useTeam = () => {
     if (!user) return []
     
     try {
-      const { data } = await supabase
-        .rpc('get_user_projects', { user_uuid: user.id })
+      // Get projects created by user
+      const { data: createdProjects } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('created_by', user.id)
       
-      return data?.map(p => p.id) || []
-    } catch (error) {
-      console.error('Error getting user project IDs:', error)
-      return []
-    }
-  }
-
-  const getUserTeamIds = async (): Promise<string[]> => {
-    if (!user) return []
-    
-    try {
-      const { data } = await supabase
-        .from('team_members')
-        .select('team_id')
+      // Get projects user is a member of
+      const { data: memberProjects } = await supabase
+        .from('project_members')
+        .select('project_id')
         .eq('user_id', user.id)
       
-      return data?.map(tm => tm.team_id) || []
+      const createdIds = createdProjects?.map(p => p.id) || []
+      const memberIds = memberProjects?.map(pm => pm.project_id) || []
+      
+      return [...new Set([...createdIds, ...memberIds])]
     } catch (error) {
-      console.error('Error getting team IDs:', error)
+      console.error('Error getting user project IDs:', error)
       return []
     }
   }
@@ -167,34 +126,39 @@ export const useTeam = () => {
         throw new Error('User not found. They need to create an account first.')
       }
 
-      // Get user's primary team (first team they created or joined)
-      const userTeams = await getUserTeamIds()
-      if (userTeams.length === 0) {
-        throw new Error('No team found to invite member to')
+      // Get user's primary project (first project they created)
+      const { data: userProjects } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('created_by', user.id)
+        .limit(1)
+        .maybeSingle()
+      
+      if (!userProjects) {
+        throw new Error('No project found to invite member to')
       }
 
-      const teamId = userTeams[0] // Use first team for now
+      const projectId = userProjects.id
 
       // Check if user is already a member
       const { data: existingMember } = await supabase
-        .from('team_members')
+        .from('project_members')
         .select('id')
-        .eq('team_id', teamId)
+        .eq('project_id', projectId)
         .eq('user_id', existingUser.id)
         .maybeSingle()
 
       if (existingMember) {
-        throw new Error('User is already a team member')
+        throw new Error('User is already a project member')
       }
 
-      // Add member to team
+      // Add member to project
       const { error } = await supabase
-        .from('team_members')
+        .from('project_members')
         .insert({
-          team_id: teamId,
+          project_id: projectId,
           user_id: existingUser.id,
-          role,
-          invited_by: user.id
+          role
         })
 
       if (error) throw error
@@ -214,7 +178,7 @@ export const useTeam = () => {
 
     try {
       const { error } = await supabase
-        .from('team_members')
+        .from('project_members')
         .update({ role: newRole })
         .eq('user_id', memberId)
 
@@ -235,7 +199,7 @@ export const useTeam = () => {
 
     try {
       const { error } = await supabase
-        .from('team_members')
+        .from('project_members')
         .delete()
         .eq('user_id', memberId)
 
@@ -251,20 +215,17 @@ export const useTeam = () => {
 
   useEffect(() => {
     if (user) {
-      fetchTeams()
       fetchMembers()
     }
   }, [user])
 
   return {
-    teams,
     members,
     loading,
     error,
     inviteMember,
     updateMemberRole,
     removeMember,
-    fetchTeams,
     fetchMembers
   }
 }

@@ -16,24 +16,29 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { useTeam } from '../../hooks/useTeam'
+import { useProjects } from '../../hooks/useProjects'
 
 export const TeamPage: React.FC = () => {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [selectedRole, setSelectedRole] = useState<'admin' | 'lead' | 'member'>('member')
-  const { teams, members, loading, inviteMember, updateMemberRole } = useTeam()
+  const { members, loading, inviteMember, updateMemberRole } = useTeam()
+  const { projects } = useProjects()
+
+  // Filter team projects (projects with project_type 'team')
+  const teamProjects = projects.filter(project => project.project_type === 'team')
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'admin': return Crown
-      case 'lead': return Shield
+      case 'manager': return Crown
+      case 'lead': return Shield  
       default: return User
     }
   }
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'text-yellow-400 bg-yellow-500/20'
+      case 'manager': return 'text-yellow-400 bg-yellow-500/20'
       case 'lead': return 'text-blue-400 bg-blue-500/20'
       default: return 'text-gray-400 bg-gray-500/20'
     }
@@ -100,9 +105,9 @@ export const TeamPage: React.FC = () => {
       >
         {[
           { label: 'Total Members', value: members.length, color: 'from-blue-500 to-cyan-600' },
-          { label: 'Admins', value: members.filter(m => m.role === 'admin').length, color: 'from-yellow-500 to-orange-600' },
+          { label: 'Managers', value: members.filter(m => m.role === 'manager').length, color: 'from-yellow-500 to-orange-600' },
           { label: 'Team Leads', value: members.filter(m => m.role === 'lead').length, color: 'from-purple-500 to-violet-600' },
-          { label: 'Active Projects', value: teams.length, color: 'from-green-500 to-emerald-600' }
+          { label: 'Team Projects', value: teamProjects.length, color: 'from-green-500 to-emerald-600' }
         ].map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -241,7 +246,7 @@ export const TeamPage: React.FC = () => {
                   >
                     <option value="member">Member</option>
                     <option value="lead">Team Lead</option>
-                    <option value="admin">Admin</option>
+                    <option value="manager">Manager</option>
                   </select>
                 </div>
               </div>
