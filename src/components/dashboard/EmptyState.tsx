@@ -155,6 +155,5 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ type, onAction }) => {
           mode="create"
         />
       )}
+import React, { useState } from 'react'
     </>
-  )
-}
