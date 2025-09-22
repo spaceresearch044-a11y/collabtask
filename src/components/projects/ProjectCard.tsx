@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 import { 
   Calendar, 
   Users, 
@@ -8,10 +9,13 @@ import {
   Trash2, 
   ExternalLink,
   Flag,
-  Clock
+  Clock,
+  AlertCircle
 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
+import { useProjects } from '../../hooks/useProjects'
+import { ProjectModal } from '../modals/ProjectModal'
 
 interface Project {
   id: string
@@ -28,9 +32,19 @@ interface Project {
 interface ProjectCardProps {
   project: Project
   viewMode: 'grid' | 'list'
+  onUpdate?: () => void
 }
 
-export const ProjectCard: React.FC<ProjectCardProps> = ({ project, viewMode }) => {
+export const ProjectCard: React.FC<ProjectCardProps> = ({ 
+  project, 
+  viewMode, 
+  onUpdate 
+}) => {
+  const [showMenu, setShowMenu] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const { deleteProject, loading } = useProjects()
+  
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -48,6 +62,27 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, viewMode }) =
     }
   }
 
+  const handleDelete = async () => {
+    try {
+      await deleteProject(project.id)
+      onUpdate?.()
+      setShowDeleteConfirm(false)
+    } catch (error) {
+      console.error('Error deleting project:', error)
+    }
+  }
+  
+  const handleEdit = () => {
+    setShowEditModal(true)
+    setShowMenu(false)
+  }
+  
+  const handleProjectUpdated = () => {
+    onUpdate?.()
+    setShowEditModal(false)
+  }
+  
+  const isOverdue = project.deadline && new Date(project.deadline) < new Date()
   if (viewMode === 'list') {
     return (
       <Card className="p-4 hover:bg-gray-800/30 transition-colors" hover>
@@ -82,7 +117,36 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, viewMode }) =
               <Button variant="ghost" size="sm" icon={<ExternalLink className="w-4 h-4" />}>
                 Open
               </Button>
-              <Button variant="ghost" size="sm" icon={<MoreVertical className="w-4 h-4" />} />
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  icon={<MoreVertical className="w-4 h-4" />}
+                  onClick={() => setShowMenu(!showMenu)}
+                />
+                {showMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]"
+                  >
+                    <button
+                      onClick={handleEdit}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <Edit className="w-3 h-3" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Delete
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -110,8 +174,43 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, viewMode }) =
             }`}>
               {project.project_type}
             </span>
+            {isOverdue && (
+              <span className="px-2 py-1 text-xs rounded-full bg-red-500/20 text-red-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Overdue
+              </span>
+            )}
           </div>
-          <Button variant="ghost" size="sm" icon={<MoreVertical className="w-4 h-4" />} />
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              icon={<MoreVertical className="w-4 h-4" />}
+              onClick={() => setShowMenu(!showMenu)}
+            />
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]"
+              >
+                <button
+                  onClick={handleEdit}
+                  className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <Edit className="w-3 h-3" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Delete
+                </button>
+              </motion.div>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -154,17 +253,78 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, viewMode }) =
               variant="ghost" 
               size="sm" 
               icon={<Edit className="w-4 h-4" />}
+              onClick={handleEdit}
             />
             <Button 
               variant="primary" 
               size="sm" 
               icon={<ExternalLink className="w-4 h-4" />}
+              onClick={() => onProjectClick?.(project.id)}
             >
               Open
             </Button>
           </div>
         </div>
       </Card>
+      
+      {/* Edit Modal */}
+      {showEditModal && (
+        <ProjectModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={handleProjectUpdated}
+          project={project}
+          mode="edit"
+        />
+      )}
+      
+      {/* Delete Confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowDeleteConfirm(false)}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative w-full max-w-md"
+          >
+            <Card className="p-6 space-y-6" glow>
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <AlertCircle className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Delete Project</h3>
+                  <p className="text-gray-400">
+                    Are you sure you want to delete "{project.name}"? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="flex-1"
+                  icon={loading ? <Clock className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                >
+                  {loading ? 'Deleting...' : 'Delete Project'}
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   )
 }

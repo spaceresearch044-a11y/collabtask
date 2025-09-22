@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
+import { useActivityLogs } from './useActivityLogs'
 
 export interface Project {
   id: string
@@ -20,12 +21,14 @@ export const useProjects = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
+  const { logActivity } = useActivityLogs()
 
   const fetchProjects = async () => {
     if (!user) return
 
     try {
       setLoading(true)
+      setError(null)
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -34,7 +37,8 @@ export const useProjects = () => {
       if (error) throw error
       setProjects(data || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch projects')
+      console.error('Error fetching projects:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load your projects')
     } finally {
       setLoading(false)
     }
@@ -47,6 +51,17 @@ export const useProjects = () => {
       setLoading(true)
       setError(null)
       
+      let teamCode = null
+      
+      // Generate team code for team projects
+      if (projectData.project_type === 'team') {
+        const { data: codeData, error: codeError } = await supabase
+          .rpc('generate_team_code')
+        
+        if (codeError) throw codeError
+        teamCode = codeData
+      }
+      
       const { data, error } = await supabase
         .from('projects')
         .insert([{
@@ -58,23 +73,41 @@ export const useProjects = () => {
 
       if (error) throw error
       
+      // Create team code record for team projects
+      if (projectData.project_type === 'team' && teamCode) {
+        await supabase
+          .from('team_codes')
+          .insert({
+            code: teamCode,
+            project_id: data.id,
+            created_by: user.id
+          })
+        
+        // Add creator as team lead
+        await supabase
+          .from('project_members')
+          .insert({
+            project_id: data.id,
+            user_id: user.id,
+            role: 'lead'
+          })
+      }
+      
       setProjects(prev => [data, ...prev])
       
       // Log activity
       try {
-        await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: user.id,
-            activity_type: 'created_project',
-            description: `Created project "${projectData.name}"`,
-            metadata: { project_type: projectData.project_type }
-          })
+        await logActivity({
+          activity_type: 'created_project',
+          description: `Created project "${projectData.name}"`,
+          project_id: data.id,
+          metadata: { project_type: projectData.project_type }
+        })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
       }
       
-      return data
+      return { ...data, teamCode }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project')
       throw err instanceof Error ? err : new Error('Failed to create project')
@@ -83,26 +116,102 @@ export const useProjects = () => {
     }
   }
 
+  const joinProject = async (teamCode: string) => {
+    if (!user) throw new Error('User not authenticated')
+
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Find valid team code
+      const { data: codeData, error: codeError } = await supabase
+        .from('team_codes')
+        .select('project_id, projects(*)')
+        .eq('code', teamCode.toUpperCase())
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle()
+      
+      if (codeError) throw codeError
+      if (!codeData) throw new Error('Invalid or expired team code')
+      
+      // Check if already a member
+      const { data: existingMember } = await supabase
+        .from('project_members')
+        .select('id')
+        .eq('project_id', codeData.project_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (existingMember) {
+        throw new Error('You are already a member of this project')
+      }
+      
+      // Add as team member
+      const { error: memberError } = await supabase
+        .from('project_members')
+        .insert({
+          project_id: codeData.project_id,
+          user_id: user.id,
+          role: 'member'
+        })
+      
+      if (memberError) throw memberError
+      
+      // Refresh projects
+      await fetchProjects()
+      
+      // Log activity
+      try {
+        await logActivity({
+          activity_type: 'joined_project',
+          description: `Joined team project "${codeData.projects.name}"`,
+          project_id: codeData.project_id,
+          metadata: { team_code: teamCode }
+        })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
+      
+      return codeData.projects
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join project')
+      throw err instanceof Error ? err : new Error('Failed to join project')
+    } finally {
+      setLoading(false)
+    }
+  }
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
+      setLoading(true)
+      setError(null)
+      
       const { data, error } = await supabase
         .from('projects')
         .update(updates)
         .eq('id', id)
         .select()
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 
       setProjects(prev => prev.map(p => p.id === id ? data : p))
       return data
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update project')
       throw err instanceof Error ? err : new Error('Failed to update project')
+    } finally {
+      setLoading(false)
     }
   }
 
   const deleteProject = async (id: string) => {
     try {
+      setLoading(true)
+      setError(null)
+      
+      // Get project name for logging
+      const project = projects.find(p => p.id === id)
+      
       const { error } = await supabase
         .from('projects')
         .delete()
@@ -114,19 +223,19 @@ export const useProjects = () => {
       
       // Log activity
       try {
-        await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: user!.id,
-            activity_type: 'deleted_project',
-            description: `Deleted project`,
-            metadata: { project_id: id }
-          })
+        await logActivity({
+          activity_type: 'deleted_project',
+          description: `Deleted project "${project?.name || 'Unknown'}"`,
+          metadata: { project_id: id }
+        })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
       }
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete project')
       throw err instanceof Error ? err : new Error('Failed to delete project')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -139,8 +248,10 @@ export const useProjects = () => {
     loading,
     error,
     createProject,
+    joinProject,
     updateProject,
     deleteProject,
-    refetch: fetchProjects
+    refetch: fetchProjects,
+    fetchProjects
   }
 }

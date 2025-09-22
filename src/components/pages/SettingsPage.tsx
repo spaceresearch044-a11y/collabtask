@@ -19,11 +19,15 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../store/store'
+import { useAuth } from '../../hooks/useAuth'
 
 export const SettingsPage: React.FC = () => {
   const { profile } = useSelector((state: RootState) => state.auth)
+  const { updateProfile, updatePassword } = useAuth()
   const [activeTab, setActiveTab] = useState('profile')
   const [showPassword, setShowPassword] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
     email: profile?.email || '',
@@ -41,9 +45,36 @@ export const SettingsPage: React.FC = () => {
     { key: 'data', label: 'Data & Privacy', icon: Key }
   ]
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Saving settings:', formData)
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveSuccess(false)
+    
+    try {
+      if (activeTab === 'profile') {
+        await updateProfile({
+          full_name: formData.full_name,
+          email: formData.email
+        })
+      } else if (activeTab === 'security' && formData.new_password) {
+        if (formData.new_password !== formData.confirm_password) {
+          throw new Error('Passwords do not match')
+        }
+        await updatePassword(formData.current_password, formData.new_password)
+        setFormData(prev => ({
+          ...prev,
+          current_password: '',
+          new_password: '',
+          confirm_password: ''
+        }))
+      }
+      
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
+    } catch (error) {
+      console.error('Error saving settings:', error)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const renderTabContent = () => {
@@ -402,9 +433,11 @@ export const SettingsPage: React.FC = () => {
         <Button
           variant="primary"
           onClick={handleSave}
-          icon={<Save className="w-4 h-4" />}
+          disabled={saving}
+          icon={saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+                saveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
         >
-          Save Changes
+          {saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Changes'}
         </Button>
       </motion.div>
 

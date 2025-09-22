@@ -8,26 +8,34 @@ import {
   Rocket,
   ArrowRight,
   Lightbulb,
-  Zap
+  Zap,
+  Code
 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ProjectCreationModal } from '../projects/ProjectCreationModal'
+import { TeamJoinModal } from '../teams/TeamJoinModal'
 import { useProjects } from '../../hooks/useProjects'
 
 interface GettingStartedProps {
-  onJoinTeam: () => void
+  onJoinTeam?: () => void
 }
 
 export const GettingStarted: React.FC<GettingStartedProps> = ({
   onJoinTeam
 }) => {
   const [showProjectModal, setShowProjectModal] = useState(false)
+  const [showJoinModal, setShowJoinModal] = useState(false)
   const [showTour, setShowTour] = useState(false)
   const { fetchProjects } = useProjects()
 
   const handleProjectCreated = () => {
     setShowProjectModal(false)
+    fetchProjects() // Refresh projects list
+  }
+  
+  const handleTeamJoined = () => {
+    setShowJoinModal(false)
     fetchProjects() // Refresh projects list
   }
 
@@ -120,7 +128,7 @@ export const GettingStarted: React.FC<GettingStartedProps> = ({
               <Button 
                 variant="secondary" 
                 className="w-full"
-                onClick={onJoinTeam}
+                onClick={() => setShowJoinModal(true)}
                 icon={<ArrowRight className="w-4 h-4" />}
               >
                 Join Now
@@ -199,6 +207,14 @@ export const GettingStarted: React.FC<GettingStartedProps> = ({
           isOpen={showProjectModal}
           onClose={() => setShowProjectModal(false)}
           onSuccess={handleProjectCreated}
+        />
+      )}
+      
+      {showJoinModal && (
+        <TeamJoinModal
+          isOpen={showJoinModal}
+          onClose={() => setShowJoinModal(false)}
+          onSuccess={handleTeamJoined}
         />
       )}
     </>

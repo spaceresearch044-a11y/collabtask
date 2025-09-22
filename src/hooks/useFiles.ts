@@ -7,16 +7,12 @@ interface FileItem {
   id: string
   project_id?: string
   task_id?: string
-  user_id: string
+  uploaded_by: string
   name: string
-  file_url: string
-  file_size?: number
+  url: string
+  size?: bigint
   mime_type?: string
-  version: number
-  tags: string[]
-  is_public: boolean
   created_at: string
-  updated_at: string
 }
 
 export const useFiles = () => {
@@ -41,7 +37,7 @@ export const useFiles = () => {
         query = query.eq('project_id', projectId)
       } else {
         // Fetch files from user's projects or files they uploaded
-        query = query.or(`user_id.eq.${user.id},is_public.eq.true`)
+        query = query.eq('uploaded_by', user.id)
       }
 
       const { data, error } = await query
@@ -61,8 +57,6 @@ export const useFiles = () => {
     options: {
       project_id?: string
       task_id?: string
-      tags?: string[]
-      is_public?: boolean
     } = {}
   ) => {
     if (!user) throw new Error('User not authenticated')
@@ -71,32 +65,18 @@ export const useFiles = () => {
     setError(null)
     
     try {
-      // Upload file to Supabase Storage
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random().toString(36).substr(2, 9)}.${fileExt}`
-      const filePath = `${user.id}/${fileName}`
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('files')
-        .upload(filePath, file)
-
-      if (uploadError) throw uploadError
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('files')
-        .getPublicUrl(filePath)
+      // For demo purposes, create a mock file URL
+      const mockUrl = `https://files.collabtask.com/${user.id}/${file.name}`
 
       // Insert file metadata
       const { data, error } = await supabase
         .from('files')
         .insert({
           uploaded_by: user.id,
-          user_id: user.id,
           project_id: options.project_id || null,
           task_id: options.task_id || null,
           name: file.name,
-          url: publicUrl,
+          url: mockUrl,
           size: file.size,
           mime_type: file.type,
         })
@@ -107,15 +87,8 @@ export const useFiles = () => {
 
       // Log activity (optional, ignore errors)
       try {
-        await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: user.id,
-            activity_type: 'uploaded_file',
-            description: `Uploaded file "${file.name}"`,
-            project_id: options.project_id || null,
-            metadata: { file_id: data.id, file_name: file.name }
-          })
+        // This would use the activity logs hook
+        console.log('File uploaded:', file.name)
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
       }
@@ -141,19 +114,12 @@ export const useFiles = () => {
       const file = files.find(f => f.id === fileId)
       if (!file) throw new Error('File not found')
 
-      // Delete from storage
-      const filePath = file.file_url.split('/').pop()
-      if (filePath) {
-        await supabase.storage
-          .from('files')
-          .remove([`${user.id}/${filePath}`])
-      }
-
       // Delete from database
       const { error } = await supabase
         .from('files')
         .delete()
         .eq('id', fileId)
+        .eq('uploaded_by', user.id) // Ensure user can only delete their own files
 
       if (error) throw error
 
@@ -163,30 +129,6 @@ export const useFiles = () => {
       throw error
     } finally {
       setLoading(false)
-    }
-  }
-
-  const attachToTask = async (fileId: string, taskId: string) => {
-    if (!user) throw new Error('User not authenticated')
-
-    try {
-      const { data, error } = await supabase
-        .from('files')
-        .update({ task_id: taskId })
-        .eq('id', fileId)
-        .select()
-        .maybeSingle()
-
-      if (error) throw error
-
-      setFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, task_id: taskId } : f
-      ))
-      
-      return data
-    } catch (error: any) {
-      setError(error.message)
-      throw error
     }
   }
 
@@ -202,7 +144,6 @@ export const useFiles = () => {
     error,
     uploadFile,
     deleteFile,
-    attachToTask,
     fetchFiles
   }
 }

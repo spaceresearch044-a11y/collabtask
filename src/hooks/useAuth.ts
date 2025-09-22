@@ -160,6 +160,41 @@ export const useAuth = () => {
     }
     dispatch(setLoading(false))
   }
+  
+  const updateProfile = async (updates: { full_name?: string; email?: string }) => {
+    if (!user) throw new Error('User not authenticated')
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .maybeSingle()
+      
+      if (error) throw error
+      
+      dispatch(setProfile(data))
+      return data
+    } catch (error: any) {
+      throw error
+    }
+  }
+  
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user) throw new Error('User not authenticated')
+    
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+      
+      if (error) throw error
+    } catch (error: any) {
+      throw error
+    }
+  }
+  
   return {
     user,
     profile,
@@ -169,5 +204,7 @@ export const useAuth = () => {
     signUp,
     signOut,
     resendConfirmation,
+    updateProfile,
+    updatePassword,
   }
 }

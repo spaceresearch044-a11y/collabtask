@@ -257,7 +257,7 @@ export const FilesPage: React.FC = () => {
                           {file.name}
                         </h4>
                         <p className="text-sm text-gray-400">
-                          {file.file_size ? formatFileSize(file.file_size) : 'Unknown size'}
+                          {file.size ? formatFileSize(Number(file.size)) : 'Unknown size'}
                         </p>
                         <p className="text-xs text-gray-500">
                           {new Date(file.created_at).toLocaleDateString()}
@@ -284,7 +284,7 @@ export const FilesPage: React.FC = () => {
                         <div>
                           <h4 className="font-medium text-white">{file.name}</h4>
                           <p className="text-sm text-gray-400">
-                            {file.file_size ? formatFileSize(file.file_size) : 'Unknown size'} • {new Date(file.created_at).toLocaleDateString()}
+                            {file.size ? formatFileSize(Number(file.size)) : 'Unknown size'} • {new Date(file.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
+import { useActivityLogs } from './useActivityLogs'
 
 export interface Task {
   id: string
@@ -23,26 +24,41 @@ export const useTasks = (projectId?: string) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
+  const { logActivity } = useActivityLogs()
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (forceProjectId?: string) => {
     if (!user) return
+    
+    const targetProjectId = forceProjectId || projectId
+    if (!targetProjectId) return
 
     try {
       setLoading(true)
-      let query = supabase
+      setError(null)
+      
+      const { data, error } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          assigned_to_profile:profiles!tasks_assigned_to_fkey(
+            id,
+            full_name,
+            email
+          ),
+          created_by_profile:profiles!tasks_created_by_fkey(
+            id,
+            full_name,
+            email
+          )
+        `)
+        .eq('project_id', targetProjectId)
         .order('position', { ascending: true })
 
-      if (projectId) {
-        query = query.eq('project_id', projectId)
-      }
-
-      const { data, error } = await query
 
       if (error) throw error
       setTasks(data || [])
     } catch (err) {
+      console.error('Error fetching tasks:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch tasks')
     } finally {
       setLoading(false)
@@ -72,15 +88,13 @@ export const useTasks = (projectId?: string) => {
       
       // Log activity
       try {
-        await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: user.id,
-            activity_type: 'created_task',
-            description: `Created task "${taskData.title}"`,
-            project_id: taskData.project_id,
-            metadata: { priority: taskData.priority, status: taskData.status }
-          })
+        await logActivity({
+          activity_type: 'created_task',
+          description: `Created task "${taskData.title}"`,
+          project_id: taskData.project_id,
+          task_id: data.id,
+          metadata: { priority: taskData.priority, status: taskData.status }
+        })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
       }
@@ -113,16 +127,13 @@ export const useTasks = (projectId?: string) => {
       // Log activity for status changes
       if (updates.status) {
         try {
-          await supabase
-            .from('activity_logs')
-            .insert({
-              user_id: user!.id,
-              activity_type: updates.status === 'completed' ? 'completed_task' : 'updated_task',
-              description: `${updates.status === 'completed' ? 'Completed' : 'Updated'} task "${data.title}"`,
-              project_id: data.project_id,
-              task_id: id,
-              metadata: { new_status: updates.status }
-            })
+          await logActivity({
+            activity_type: updates.status === 'completed' ? 'completed_task' : 'updated_task',
+            description: `${updates.status === 'completed' ? 'Completed' : 'Updated'} task "${data.title}"`,
+            project_id: data.project_id,
+            task_id: id,
+            metadata: { new_status: updates.status }
+          })
         } catch (logError) {
           console.warn('Activity logging failed:', logError)
         }
@@ -142,6 +153,9 @@ export const useTasks = (projectId?: string) => {
       setLoading(true)
       setError(null)
       
+      // Get task info for logging
+      const task = tasks.find(t => t.id === id)
+      
       const { error } = await supabase
         .from('tasks')
         .delete()
@@ -150,6 +164,18 @@ export const useTasks = (projectId?: string) => {
       if (error) throw error
 
       setTasks(prev => prev.filter(t => t.id !== id))
+      
+      // Log activity
+      try {
+        await logActivity({
+          activity_type: 'deleted_task',
+          description: `Deleted task "${task?.title || 'Unknown'}"`,
+          project_id: task?.project_id,
+          metadata: { task_id: id }
+        })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete task')
       throw err instanceof Error ? err : new Error('Failed to delete task')
@@ -176,7 +202,9 @@ export const useTasks = (projectId?: string) => {
   }
 
   useEffect(() => {
-    fetchTasks()
+    if (projectId) {
+      fetchTasks()
+    }
   }, [user, projectId])
 
   return {
@@ -187,6 +215,7 @@ export const useTasks = (projectId?: string) => {
     updateTask,
     deleteTask,
     updateTaskPosition,
-    refetch: fetchTasks
+    refetch: fetchTasks,
+    fetchTasks
   }
 }

@@ -17,70 +17,32 @@ import {
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { useActivityLogs } from '../../hooks/useActivityLogs'
 
-interface Notification {
-  id: string
-  type: 'info' | 'success' | 'warning' | 'error'
-  title: string
-  message: string
-  is_read: boolean
-  created_at: string
-  data?: any
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'success',
-    title: 'Task Completed',
-    message: 'Sarah completed "Design Homepage" task',
-    is_read: false,
-    created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString()
-  },
-  {
-    id: '2',
-    type: 'info',
-    title: 'New Comment',
-    message: 'Alex commented on "API Integration" task',
-    is_read: false,
-    created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString()
-  },
-  {
-    id: '3',
-    type: 'warning',
-    title: 'Deadline Approaching',
-    message: 'Mobile App Redesign project due in 2 days',
-    is_read: true,
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: '4',
-    type: 'info',
-    title: 'Meeting Reminder',
-    message: 'Team standup meeting in 30 minutes',
-    is_read: false,
-    created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: '5',
-    type: 'success',
-    title: 'Project Created',
-    message: 'New project "E-commerce Platform" has been created',
-    is_read: true,
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  }
-]
-
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case 'success': return CheckCircle
-    case 'warning': return AlertCircle
-    case 'error': return X
+const getNotificationIcon = (activity_type: string) => {
+  switch (activity_type) {
+    case 'completed_task': return CheckCircle
+    case 'created_task': return Info
+    case 'created_project': return Info
+    case 'uploaded_file': return FileText
+    case 'scheduled_meeting': return Calendar
     default: return Info
   }
 }
 
-const getNotificationColor = (type: string) => {
+const getNotificationType = (activity_type: string) => {
+  switch (type) {
+    case 'completed_task': return 'success'
+    case 'created_task': return 'info'
+    case 'created_project': return 'success'
+    case 'uploaded_file': return 'info'
+    case 'scheduled_meeting': return 'info'
+    default: return Info
+  }
+}
+
+const getNotificationColor = (activity_type: string) => {
+  const type = getNotificationType(activity_type)
   switch (type) {
     case 'success': return 'from-green-500 to-emerald-600'
     case 'warning': return 'from-yellow-500 to-orange-600'
@@ -101,10 +63,21 @@ const formatTimeAgo = (dateString: string) => {
 }
 
 export const NotificationsPage: React.FC = () => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+  const { activities, loading, fetchActivities } = useActivityLogs()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
   const [showSettings, setShowSettings] = useState(false)
+
+  // Convert activities to notification format
+  const notifications = activities.map(activity => ({
+    id: activity.id,
+    type: getNotificationType(activity.activity_type),
+    title: activity.activity_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    message: activity.description,
+    is_read: false, // All activities are treated as unread for now
+    created_at: activity.created_at,
+    activity_type: activity.activity_type
+  }))
 
   const filteredNotifications = notifications.filter(notification => {
     const matchesSearch = notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,24 +85,25 @@ export const NotificationsPage: React.FC = () => {
     const matchesFilter = filterType === 'all' || 
                          (filterType === 'unread' && !notification.is_read) ||
                          (filterType === 'read' && notification.is_read) ||
-                         notification.type === filterType
+                         notification.activity_type === filterType
     return matchesSearch && matchesFilter
   })
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === id ? { ...n, is_read: true } : n
-    ))
+    // TODO: Implement mark as read in database
+    console.log('Mark as read:', id)
   }
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+    // TODO: Implement mark all as read
+    console.log('Mark all as read')
   }
 
   const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id))
+    // TODO: Implement delete notification
+    console.log('Delete notification:', id)
   }
 
   return (
@@ -227,8 +201,8 @@ export const NotificationsPage: React.FC = () => {
         <Card className="p-6">
           <div className="space-y-4">
             {filteredNotifications.map((notification, index) => {
-              const Icon = getNotificationIcon(notification.type)
-              const colorClasses = getNotificationColor(notification.type)
+              const Icon = getNotificationIcon(notification.activity_type)
+              const colorClasses = getNotificationColor(notification.activity_type)
               
               return (
                 <motion.div
