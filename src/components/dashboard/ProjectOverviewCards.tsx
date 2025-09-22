@@ -275,14 +275,6 @@ export const ProjectOverviewCards: React.FC = () => {
                         e.stopPropagation()
                         // TODO: Open team management modal
                       }}
-                      className="w-full flex items-center gap-3 p-3 bg-green-500/20 hover:bg-green-500/30 rounded-lg text-green-300 hover:text-green-200 transition-all"
-                    >
-                      <Users className="w-4 h-4" />
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="text-gray-400 group-hover:text-blue-400 transition-colors"
-                    <h3 className="text-lg font-semibold text-gray-400 group-hover:text-white transition-colors">
                       Create New Project
                     </h3>
                     <p className="text-sm text-gray-500 group-hover:text-gray-400 transition-colors">
