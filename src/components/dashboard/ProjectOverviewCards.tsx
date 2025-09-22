@@ -295,42 +295,6 @@ export const ProjectOverviewCards: React.FC = () => {
                     </motion.button>
                   </div>
                 </div>
-              </Card>
-            </motion.div>
-          </motion.div>
-            )
-          })}
-
-          {/* Add New Project Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: projects.length * 0.1 }}
-          >
-            <motion.div
-              whileHover={{ 
-                scale: 1.02,
-                rotateY: 2,
-                rotateX: 1
-              }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleCreateProject}
-              className="group cursor-pointer"
-            >
-              <Card className="p-6 h-full border-2 border-dashed border-gray-700 hover:border-blue-500/50 transition-all duration-300">
-                <div className="h-full flex flex-col items-center justify-center space-y-4 text-center">
-                  <motion.div
-                    whileHover={{ rotate: 90 }}
-                    className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-blue-500/30 group-hover:to-purple-500/30 transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      // TODO: Show project actions menu
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      // TODO: Navigate to project detail page
-                      console.log('Opening project:', project.id)
-                    }}
-                    }}
                   >
                     <Plus className="w-6 h-6 text-blue-400" />
                   </motion.div>
@@ -353,6 +317,15 @@ export const ProjectOverviewCards: React.FC = () => {
       {showProjectModal && (
         <ProjectModal
           isOpen={showProjectModal}
+          onClose={() => setShowProjectModal(false)}
+          onSuccess={handleProjectSuccess}
+          project={selectedProject}
+          mode={modalMode}
+        />
+      )}
+    </>
+  )
+}ProjectModal}
           onClose={() => setShowProjectModal(false)}
           onSuccess={handleProjectSuccess}
           project={selectedProject}
