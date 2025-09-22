@@ -278,18 +278,10 @@ export const ProjectOverviewCards: React.FC = () => {
                       className="w-full flex items-center gap-3 p-3 bg-green-500/20 hover:bg-green-500/30 rounded-lg text-green-300 hover:text-green-200 transition-all"
                     >
                       <Users className="w-4 h-4" />
-                      Manage Team
-                    </motion.button>
-                    
-                    <motion.button
-                      whileHover={{ scale: 1.02, x: 4 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                  >
-                    <Plus className="w-6 h-6 text-blue-400" />
-                  </motion.div>
-                  <div>
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="text-gray-400 group-hover:text-blue-400 transition-colors"
                     <h3 className="text-lg font-semibold text-gray-400 group-hover:text-white transition-colors">
                       Create New Project
                     </h3>
@@ -308,15 +300,10 @@ export const ProjectOverviewCards: React.FC = () => {
       {showProjectModal && (
         <ProjectModal
           isOpen={showProjectModal}
-          onClose={() => setShowProjectModal(false)}
-          onSuccess={handleProjectSuccess}
-          project={selectedProject}
-          mode={modalMode}
-        />
-      )}
-    </>
-  )
-}ProjectModal}
+           onClick={(e) => {
+             e.stopPropagation()
+             handleCreateProject()
+           }}
           onClose={() => setShowProjectModal(false)}
           onSuccess={handleProjectSuccess}
           project={selectedProject}
