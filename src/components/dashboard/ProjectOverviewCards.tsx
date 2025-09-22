@@ -286,15 +286,6 @@ export const ProjectOverviewCards: React.FC = () => {
                       whileTap={{ scale: 0.98 }}
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDeleteProject(project)
-                      }}
-                      className="w-full flex items-center gap-3 p-3 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 hover:text-red-200 transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete Project
-                    </motion.button>
-                  </div>
-                </div>
                   >
                     <Plus className="w-6 h-6 text-blue-400" />
                   </motion.div>
