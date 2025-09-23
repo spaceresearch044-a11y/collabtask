@@ -8,7 +8,9 @@ import {
   Flag, 
   Copy, 
   Check,
-  Loader2
+  Loader2,
+  Target,
+  Sparkles
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -30,11 +32,9 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'individual' as 'individual' | 'team',
-    role: 'lead' as 'lead' | 'member',
-    teamCode: '',
+    project_type: 'individual' as 'individual' | 'team',
     deadline: '',
-    priority: 'medium' as 'low' | 'medium' | 'high'
+    color: '#3b82f6'
   })
   const [generatedCode, setGeneratedCode] = useState('')
   const [codeCopied, setCodeCopied] = useState(false)
@@ -43,28 +43,24 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 
   const handleSubmit = async () => {
     try {
-      if (formData.type === 'team' && formData.role === 'member') {
-        await joinProject(formData.teamCode)
-      } else {
-        const result = await createProject({
-          name: formData.name,
-          description: formData.description,
-          project_type: formData.type,
-          deadline: formData.deadline || null,
-        })
-        
-        if (formData.type === 'team' && result?.teamCode) {
-          setGeneratedCode(result.teamCode)
-          setStep(4)
-          return
-        }
+      const result = await createProject({
+        name: formData.name,
+        description: formData.description,
+        project_type: formData.project_type,
+        deadline: formData.deadline || null,
+        color: formData.color
+      })
+      
+      if (formData.project_type === 'team' && result?.teamCode) {
+        setGeneratedCode(result.teamCode)
+        setStep(3)
+        return
       }
       
       onSuccess()
-      onClose()
+      handleClose()
     } catch (error) {
       console.error('Error creating/joining project:', error)
-      // Error is already handled in the hook, just log it here
     }
   }
 
@@ -79,11 +75,9 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
     setFormData({
       name: '',
       description: '',
-      type: 'individual',
-      role: 'lead',
-      teamCode: '',
+      project_type: 'individual',
       deadline: '',
-      priority: 'medium'
+      color: '#3b82f6'
     })
     setGeneratedCode('')
     setCodeCopied(false)
@@ -94,6 +88,16 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
     onClose()
   }
 
+  const getModalTitle = () => {
+    if (step === 1) return 'Create New Project'
+    if (step === 2) return 'Project Details'
+    return 'Team Code Generated'
+  }
+
+  const colors = [
+    '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', 
+    '#ef4444', '#06b6d4', '#f97316', '#84cc16'
+  ]
   return (
     <AnimatePresence>
       {isOpen && (
@@ -113,13 +117,27 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
             className="relative w-full max-w-md"
           >
             <Card className="p-6 space-y-6" glow>
+              {/* Header */}
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">
-                  {step === 1 && 'Create New Project'}
-                  {step === 2 && 'Project Details'}
-                  {step === 3 && 'Team Setup'}
-                  {step === 4 && 'Team Code Generated'}
-                </h2>
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center"
+                  >
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </motion.div>
+                  <h2 className="text-xl font-bold text-white">{getModalTitle()}</h2>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleClose}
+                  className="p-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
+              </div>
                 <button
                   onClick={handleClose}
                   className="p-2 text-gray-400 hover:text-white transition-colors"
@@ -128,7 +146,7 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                 </button>
               </div>
 
-              {/* Step 1: Project Type */}
+              {/* Step 1: Project Type (only for create mode) */}
               {step === 1 && (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -139,12 +157,12 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                   
                   <div className="grid grid-cols-2 gap-4">
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => setFormData({ ...formData, type: 'individual' })}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        formData.type === 'individual'
-                          ? 'border-blue-500 bg-blue-500/10'
+                      onClick={() => setFormData({ ...formData, project_type: 'individual' })}
+                      className={`p-6 rounded-xl border-2 transition-all duration-300 ${
+                        formData.project_type === 'individual'
+                          ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/25'
                           : 'border-gray-700 hover:border-gray-600'
                       }`}
                     >
@@ -154,12 +172,12 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                     </motion.button>
 
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => setFormData({ ...formData, type: 'team' })}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        formData.type === 'team'
-                          ? 'border-purple-500 bg-purple-500/10'
+                      onClick={() => setFormData({ ...formData, project_type: 'team' })}
+                      className={`p-6 rounded-xl border-2 transition-all duration-300 ${
+                        formData.project_type === 'team'
+                          ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/25'
                           : 'border-gray-700 hover:border-gray-600'
                       }`}
                     >
@@ -173,6 +191,7 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                     variant="primary"
                     className="w-full"
                     onClick={() => setStep(2)}
+                    icon={<Target className="w-4 h-4" />}
                   >
                     Continue
                   </Button>
@@ -192,6 +211,7 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter project name"
                     required
+                    icon={<Target className="w-4 h-4" />}
                   />
 
                   <div className="space-y-2">
@@ -218,20 +238,36 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-200">
-                        Priority
+                        Color Theme
                       </label>
-                      <select
-                        value={formData.priority}
-                        onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                        className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
+                      <div className="grid grid-cols-4 gap-2">
+                        {colors.map((color) => (
+                          <motion.button
+                            key={color}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setFormData({ ...formData, color })}
+                            className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                              formData.color === color 
+                                ? 'border-white shadow-lg' 
+                                : 'border-gray-600 hover:border-gray-400'
+                            }`}
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
 
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
+                    >
+                      <p className="text-red-400 text-sm">{error}</p>
+                    </motion.div>
+                  )}
                   <div className="flex gap-3">
                     <Button
                       variant="ghost"
@@ -242,117 +278,42 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                     </Button>
                     <Button
                       variant="primary"
-                      onClick={() => formData.type === 'team' ? setStep(3) : handleSubmit()}
+                      onClick={handleSubmit}
                       disabled={!formData.name.trim() || loading}
                       className="flex-1"
+                      icon={loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
                     >
-                      {loading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : formData.type === 'team' ? (
-                        'Continue'
-                      ) : (
-                        'Create Project'
-                      )}
+                      {loading ? 'Creating...' : 'Create Project'}
                     </Button>
                   </div>
                 </motion.div>
               )}
 
-              {/* Step 3: Team Setup */}
+              {/* Step 3: Team Code Generated */}
               {step === 3 && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
-                >
-                  <p className="text-gray-400">Choose your role:</p>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setFormData({ ...formData, role: 'lead' })}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        formData.role === 'lead'
-                          ? 'border-blue-500 bg-blue-500/10'
-                          : 'border-gray-700 hover:border-gray-600'
-                      }`}
-                    >
-                      <Flag className="w-8 h-8 mx-auto mb-2 text-blue-400" />
-                      <h3 className="font-semibold text-white">Team Lead</h3>
-                      <p className="text-sm text-gray-400">Create & manage</p>
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setFormData({ ...formData, role: 'member' })}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        formData.role === 'member'
-                          ? 'border-purple-500 bg-purple-500/10'
-                          : 'border-gray-700 hover:border-gray-600'
-                      }`}
-                    >
-                      <Users className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-                      <h3 className="font-semibold text-white">Team Member</h3>
-                      <p className="text-sm text-gray-400">Join existing</p>
-                    </motion.button>
-                  </div>
-
-                  {formData.role === 'member' && (
-                    <Input
-                      label="Team Code"
-                      value={formData.teamCode}
-                      onChange={(e) => setFormData({ ...formData, teamCode: e.target.value.toUpperCase() })}
-                      placeholder="Enter team code (e.g., CT-AB12)"
-                      required
-                    />
-                  )}
-
-                  <div className="flex gap-3">
-                    <Button
-                      variant="ghost"
-                      onClick={() => setStep(2)}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      variant="primary"
-                      onClick={handleSubmit}
-                      disabled={
-                        loading || 
-                        (formData.role === 'member' && !formData.teamCode.trim())
-                      }
-                      className="flex-1"
-                    >
-                      {loading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : formData.role === 'lead' ? (
-                        'Create Team Project'
-                      ) : (
-                        'Join Team'
-                      )}
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 4: Team Code Generated */}
-              {step === 4 && (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   className="space-y-6 text-center"
                 >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto"
+                  >
+                    <Check className="w-8 h-8 text-white" />
+                  </motion.div>
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold text-white">Team Project Created!</h3>
                     <p className="text-gray-400">Share this code with your team members:</p>
                   </div>
 
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-gray-800/50 border border-gray-700 rounded-lg p-6"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="text-2xl font-mono font-bold text-blue-400">
+                      <span className="text-3xl font-mono font-bold text-blue-400">
                         {generatedCode}
                       </span>
                       <Button
@@ -364,7 +325,7 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                         {codeCopied ? 'Copied!' : 'Copy'}
                       </Button>
                     </div>
-                  </div>
+                  </motion.div>
 
                   <p className="text-sm text-gray-500">
                     Team members can use this code to join your project. 
@@ -378,6 +339,7 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
                       onClose()
                     }}
                     className="w-full"
+                    icon={<Target className="w-4 h-4" />}
                   >
                     Go to Dashboard
                   </Button>

@@ -10,12 +10,12 @@ import {
   ExternalLink,
   Flag,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { useProjects } from '../../hooks/useProjects'
-import { ProjectModal } from '../modals/ProjectModal'
 
 interface Project {
   id: string
@@ -27,21 +27,23 @@ interface Project {
   deadline: string | null
   created_at: string
   updated_at: string
+  created_by: string
 }
 
 interface ProjectCardProps {
   project: Project
   viewMode: 'grid' | 'list'
   onUpdate?: () => void
+  onOpen?: (project: Project) => void
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ 
   project, 
   viewMode, 
-  onUpdate 
+  onUpdate,
+  onOpen
 }) => {
   const [showMenu, setShowMenu] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const { deleteProject, loading } = useProjects()
   
@@ -53,36 +55,25 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     })
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-red-400'
-      case 'medium': return 'text-yellow-400'
-      case 'low': return 'text-green-400'
-      default: return 'text-gray-400'
-    }
-  }
 
   const handleDelete = async () => {
     try {
       await deleteProject(project.id)
       onUpdate?.()
       setShowDeleteConfirm(false)
+      setShowMenu(false)
     } catch (error) {
       console.error('Error deleting project:', error)
     }
   }
   
-  const handleEdit = () => {
-    setShowEditModal(true)
+  const handleOpen = () => {
+    onOpen?.(project)
     setShowMenu(false)
   }
   
-  const handleProjectUpdated = () => {
-    onUpdate?.()
-    setShowEditModal(false)
-  }
-  
   const isOverdue = project.deadline && new Date(project.deadline) < new Date()
+
   if (viewMode === 'list') {
     return (
       <Card className="p-4 hover:bg-gray-800/30 transition-colors" hover>
@@ -118,6 +109,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                 Open
               </Button>
               <div className="relative">
+                onClick={handleOpen}
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -194,7 +186,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                 animate={{ opacity: 1, scale: 1 }}
                 className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]"
               >
-                <button
+                View
                   onClick={handleEdit}
                   className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2"
                 >
@@ -223,17 +215,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </p>
         </div>
 
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowMenu(false)}
+                    />
         {/* Status */}
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${
-            project.status === 'active' ? 'bg-green-500' :
+                      className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-20 min-w-[120px]"
             project.status === 'completed' ? 'bg-blue-500' :
             'bg-yellow-500'
-          }`} />
+                        onClick={handleOpen}
           <span className="text-sm text-gray-400 capitalize">{project.status}</span>
         </div>
-
-        {/* Footer */}
+                        <Eye className="w-3 h-3" />
+                        View Details
         <div className="flex items-center justify-between pt-4 border-t border-gray-800">
           <div className="flex items-center gap-4 text-sm text-gray-400">
             {project.deadline && (
@@ -243,6 +240,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               </div>
             )}
             <div className="flex items-center gap-1">
+                  </>
               <Clock className="w-4 h-4" />
               <span>{formatDate(project.created_at)}</span>
             </div>
@@ -267,12 +265,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       </Card>
       
       {/* Edit Modal */}
-      {showEditModal && (
-        <ProjectModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          onSuccess={handleProjectUpdated}
-          project={project}
+        <div className="space-y-2" onClick={handleOpen}>
+    <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
           mode="edit"
         />
       )}
@@ -300,30 +294,24 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                     Are you sure you want to delete "{project.name}"? This action cannot be undone.
                   </p>
                 </div>
+              <>
+                <div 
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowMenu(false)}
+                />
               </div>
-              
-              <div className="flex gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1"
                 >
                   Cancel
-                </Button>
-                <Button
+                    <Eye className="w-3 h-3" />
+                  icon={loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              onClick={handleOpen}
                   variant="danger"
-                  onClick={handleDelete}
-                  disabled={loading}
+              View
+                    onClick={() => {
+                      setShowDeleteConfirm(true)
+                      setShowMenu(false)
+                    }}
                   className="flex-1"
-                  icon={loading ? <Clock className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                >
-                  {loading ? 'Deleting...' : 'Delete Project'}
-                </Button>
-              </div>
-            </Card>
-          </motion.div>
-        </div>
-      )}
     </motion.div>
   )
 }

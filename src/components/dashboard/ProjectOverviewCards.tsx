@@ -7,6 +7,7 @@ import { Card } from '../ui/Card';
 import { TrendingUp, Users, CheckCircle, Clock, FolderOpen, Target, Plus } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ProjectCreationModal } from '../projects/ProjectCreationModal';
+import { ProjectDetailsModal } from '../projects/ProjectDetailsModal';
 import { useState } from 'react';
 
 interface ProjectOverviewCardsProps {
@@ -19,6 +20,7 @@ export const ProjectOverviewCards: React.FC<ProjectOverviewCardsProps> = ({
   onProjectClick 
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<any>(null)
   const { projects, loading, fetchProjects } = useProjects()
   const { members } = useTeam()
   
@@ -36,6 +38,15 @@ export const ProjectOverviewCards: React.FC<ProjectOverviewCardsProps> = ({
     setShowCreateModal(false)
   }
   
+  const handleProjectUpdated = () => {
+    fetchProjects()
+    setSelectedProject(null)
+  }
+
+  const handleProjectOpen = (project: any) => {
+    setSelectedProject(project)
+  }
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -132,6 +143,65 @@ export const ProjectOverviewCards: React.FC<ProjectOverviewCardsProps> = ({
         </motion.div>
       </div>
       
+      {/* Recent Projects */}
+      {projects.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mt-8"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Recent Projects</h3>
+            <Button
+              variant="ghost"
+              onClick={() => setShowCreateModal(true)}
+              icon={<Plus className="w-4 h-4" />}
+            >
+              New Project
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projects.slice(0, 6).map((project, index) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -2 }}
+                onClick={() => handleProjectOpen(project)}
+                className="cursor-pointer"
+              >
+                <Card className="p-4 hover:bg-gray-800/30 transition-colors" hover>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: project.color }}
+                    >
+                      <Target className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-white truncate">{project.name}</h4>
+                      <p className="text-sm text-gray-400 truncate">
+                        {project.description || 'No description'}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      project.project_type === 'team' 
+                        ? 'bg-purple-500/20 text-purple-400' 
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      {project.project_type}
+                    </span>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {projects.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -158,6 +228,15 @@ export const ProjectOverviewCards: React.FC<ProjectOverviewCardsProps> = ({
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSuccess={handleProjectCreated}
+        />
+      )}
+
+      {selectedProject && (
+        <ProjectDetailsModal
+          isOpen={!!selectedProject}
+          onClose={() => setSelectedProject(null)}
+          project={selectedProject}
+          onUpdate={handleProjectUpdated}
         />
       )}
     </>

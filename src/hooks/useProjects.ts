@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
-import { useActivityLogs } from './useActivityLogs'
 
 export interface Project {
   id: string
@@ -21,7 +20,6 @@ export const useProjects = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
-  const { logActivity } = useActivityLogs()
 
   const fetchProjects = async () => {
     if (!user) return
@@ -113,12 +111,15 @@ export const useProjects = () => {
       
       // Log activity
       try {
-        await logActivity({
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
           activity_type: 'created_project',
           description: `Created project "${projectData.name}"`,
           project_id: data.id,
           metadata: { project_type: projectData.project_type }
-        })
+          })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
       }
@@ -178,12 +179,15 @@ export const useProjects = () => {
       
       // Log activity
       try {
-        await logActivity({
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
           activity_type: 'joined_project',
           description: `Joined team project "${codeData.projects.name}"`,
           project_id: codeData.project_id,
           metadata: { team_code: teamCode }
-        })
+          })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
       }
@@ -196,6 +200,7 @@ export const useProjects = () => {
       setLoading(false)
     }
   }
+
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
       setLoading(true)
@@ -211,6 +216,22 @@ export const useProjects = () => {
       if (error) throw error
 
       setProjects(prev => prev.map(p => p.id === id ? data : p))
+      
+      // Log activity
+      try {
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user!.id,
+            activity_type: 'updated_project',
+            description: `Updated project "${data.name}"`,
+            project_id: id,
+            metadata: { updates: Object.keys(updates) }
+          })
+      } catch (logError) {
+        console.warn('Activity logging failed:', logError)
+      }
+      
       return data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update project')
@@ -239,11 +260,14 @@ export const useProjects = () => {
       
       // Log activity
       try {
-        await logActivity({
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user!.id,
           activity_type: 'deleted_project',
           description: `Deleted project "${project?.name || 'Unknown'}"`,
           metadata: { project_id: id }
-        })
+          })
       } catch (logError) {
         console.warn('Activity logging failed:', logError)
       }

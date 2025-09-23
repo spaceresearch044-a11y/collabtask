@@ -7,10 +7,12 @@ import { Input } from '../ui/Input'
 import { EmptyState } from '../dashboard/EmptyState'
 import { ProjectCard } from '../projects/ProjectCard'
 import { ProjectCreationModal } from '../projects/ProjectCreationModal'
+import { ProjectDetailsModal } from '../projects/ProjectDetailsModal'
 
 export const ProjectsPage: React.FC = () => {
-  const { projects, loading } = useProjects()
+  const { projects, loading, fetchProjects } = useProjects()
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [filterType, setFilterType] = useState<'all' | 'individual' | 'team'>('all')
@@ -22,6 +24,19 @@ export const ProjectsPage: React.FC = () => {
     return matchesSearch && matchesFilter
   })
 
+  const handleProjectCreated = () => {
+    fetchProjects()
+    setShowCreateModal(false)
+  }
+
+  const handleProjectUpdated = () => {
+    fetchProjects()
+    setSelectedProject(null)
+  }
+
+  const handleProjectOpen = (project: any) => {
+    setSelectedProject(project)
+  }
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -41,7 +56,7 @@ export const ProjectsPage: React.FC = () => {
           <ProjectCreationModal
             isOpen={showCreateModal}
             onClose={() => setShowCreateModal(false)}
-            onSuccess={() => setShowCreateModal(false)}
+            onSuccess={handleProjectCreated}
           />
         )}
       </>
@@ -146,7 +161,12 @@ export const ProjectsPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
             >
-              <ProjectCard project={project} viewMode={viewMode} />
+              <ProjectCard 
+                project={project} 
+                viewMode={viewMode} 
+                onUpdate={fetchProjects}
+                onOpen={handleProjectOpen}
+              />
             </motion.div>
           ))}
         </motion.div>
@@ -157,7 +177,17 @@ export const ProjectsPage: React.FC = () => {
         <ProjectCreationModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          onSuccess={() => setShowCreateModal(false)}
+          onSuccess={handleProjectCreated}
+        />
+      )}
+
+      {/* Project Details Modal */}
+      {selectedProject && (
+        <ProjectDetailsModal
+          isOpen={!!selectedProject}
+          onClose={() => setSelectedProject(null)}
+          project={selectedProject}
+          onUpdate={handleProjectUpdated}
         />
       )}
     </div>
