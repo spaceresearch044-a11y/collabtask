@@ -63,6 +63,9 @@ export const useAuth = () => {
       // Ensure profile exists first
       await supabase.rpc('ensure_user_profile_exists', { user_id: userId })
       
+      // Ensure profile exists first
+      await supabase.rpc('ensure_user_profile_exists', { user_id: userId })
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -94,12 +97,7 @@ export const useAuth = () => {
       })
       
       if (error) {
-        if (error.message.includes('refresh_token_not_found')) {
-          localStorage.clear()
-          dispatch(setError('Session expired. Please sign in again.'))
-        } else {
-          dispatch(setError(error.message))
-        }
+        dispatch(setError(error.message))
       }
     } catch (error: any) {
       dispatch(setError(error.message))
@@ -126,8 +124,8 @@ export const useAuth = () => {
       if (error) {
         dispatch(setError(error.message))
       } else if (data.user && !data.user.email_confirmed_at) {
-        // For email confirmation flow, show success message
-        dispatch(setError('Please check your email and click the confirmation link to complete your registration.'))
+        // Show success message for email confirmation
+        dispatch(setError('Account created successfully! You can now sign in.'))
       }
     } catch (error: any) {
       dispatch(setError(error.message))
@@ -142,7 +140,6 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Sign out error:', error)
     }
-    localStorage.clear()
     dispatch(clearAuth())
   }
 

@@ -59,6 +59,90 @@ export const SettingsPage: React.FC = () => {
         if (formData.new_password !== formData.confirm_password) {
           throw new Error('Passwords do not match')
         }
+
+        const { updateProfile, updatePassword } = useAuth()
+        const [activeTab, setActiveTab] = useState('profile')
+        const [showPassword, setShowPassword] = useState(false)
+        const [saving, setSaving] = useState(false)
+        const [saveSuccess, setSaveSuccess] = useState(false)
+        const [formData, setFormData] = useState({
+          full_name: profile?.full_name || '',
+          email: profile?.email || '',
+          current_password: '',
+          new_password: '',
+          confirm_password: ''
+        })
+
+        const tabs = [
+          { key: 'profile', label: 'Profile', icon: User },
+          { key: 'notifications', label: 'Notifications', icon: Bell },
+          { key: 'security', label: 'Security', icon: Shield },
+          { key: 'appearance', label: 'Appearance', icon: Palette },
+          { key: 'integrations', label: 'Integrations', icon: Globe },
+          { key: 'data', label: 'Data & Privacy', icon: Key }
+        ]
+
+        const handleSave = async () => {
+          setSaving(true)
+          setSaveSuccess(false)
+          
+          try {
+            if (activeTab === 'profile') {
+              await updateProfile({
+                full_name: formData.full_name,
+                email: formData.email
+              })
+            } else if (activeTab === 'security' && formData.new_password) {
+              if (formData.new_password !== formData.confirm_password) {
+                throw new Error('Passwords do not match')
+              }
+              await updatePassword(formData.current_password, formData.new_password)
+              setFormData(prev => ({
+                ...prev,
+                current_password: '',
+                new_password: '',
+                confirm_password: ''
+              }))
+            }
+            
+            setSaveSuccess(true)
+            setTimeout(() => setSaveSuccess(false), 3000)
+          } catch (error) {
+            console.error('Error saving settings:', error)
+          } finally {
+            setSaving(false)
+          }
+        }
+
+        return (
+          <div className="space-y-6">
+            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between"
+            >
+              <div>
+                <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                  <div className="w-8 h-8 text-gray-400">
+                    <Settings className="w-full h-full" />
+                  </div>
+                  Settings
+                </h1>
+                <p className="text-gray-400 mt-1">
+                  Manage your account and preferences
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                onClick={handleSave}
+                disabled={saving}
+                icon={saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+                      saveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              >
+                {saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Changes'}
+              </Button>
+            </motion.div>
         await updatePassword(formData.current_password, formData.new_password)
         setFormData(prev => ({
           ...prev,

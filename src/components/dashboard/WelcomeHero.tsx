@@ -48,13 +48,9 @@ export const WelcomeHero: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex items-center gap-3"
           >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-              className="w-8 h-8 text-yellow-400"
-            >
+            <div className="w-8 h-8 text-yellow-400">
               <Sparkles className="w-full h-full" />
-            </motion.div>
+            </div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">
               Welcome back, {profile?.full_name || 'User'}!
             </h1>

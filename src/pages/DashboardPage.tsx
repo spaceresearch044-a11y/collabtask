@@ -22,9 +22,9 @@ export const DashboardPage: React.FC = () => {
   const { projects, loading: projectsLoading, error: projectsError } = useProjects()
   
   const renderPageContent = () => {
-    // Show onboarding for new users with no projects and no creation history
+    // Show onboarding for new users with no projects, no errors, and no creation history
     if (!projectsLoading && projects.length === 0 && currentPage === 'dashboard' && 
-        !projectsError && !profile?.has_ever_created_project) {
+        !projectsError && profile && !profile.has_ever_created_project) {
       return (
         <GettingStarted
           onJoinTeam={() => {}}

@@ -5,22 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables. Please check your .env file.')
-  console.error('Required variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY')
   throw new Error('Missing Supabase environment variables. Please check your .env file and restart the development server.')
-  console.error('Required variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY')
-  throw new Error('Missing Supabase environment variables. Please check your .env file and restart the development server.')
-  console.error('Required variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY')
-  throw new Error('Missing Supabase environment variables. Please check your .env file and restart the development server.')
-}
-
-// Validate URL format
-if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
-  throw new Error('Invalid VITE_SUPABASE_URL format. Should be: https://your-project-ref.supabase.co')
-}
-
-// Validate URL format
-if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
-  throw new Error('Invalid VITE_SUPABASE_URL format. Should be: https://your-project-ref.supabase.co')
 }
 
 // Validate URL format
@@ -33,6 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType: 'pkce',
     storage: {
       getItem: (key) => {
         try {
@@ -59,14 +45,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Handle invalid refresh tokens
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'TOKEN_REFRESHED' && !session) {
-    // Clear invalid session data
-    localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
-    window.location.reload()
-  }
-})
 
 export type Database = {
   public: {

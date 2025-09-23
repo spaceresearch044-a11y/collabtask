@@ -29,13 +29,29 @@ export const useProjects = () => {
     try {
       setLoading(true)
       setError(null)
+      
+      // Use the new database function to get user's projects
       const { data, error } = await supabase
+        .rpc('get_user_projects', { user_id: user.id })
+      
+      if (error) throw error
+      
+      // Get full project details
+      const projectIds = data?.map(p => p.project_id) || []
+      
+      if (projectIds.length === 0) {
+        setProjects([])
+        return
+      }
+      
+      const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
+        .in('id', projectIds)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setProjects(data || [])
+      if (projectsError) throw projectsError
+      setProjects(projectsData || [])
     } catch (err) {
       console.error('Error fetching projects:', err)
       setError(err instanceof Error ? err.message : 'Failed to load your projects')

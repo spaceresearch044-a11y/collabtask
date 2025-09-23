@@ -31,13 +31,13 @@ const getNotificationIcon = (activity_type: string) => {
 }
 
 const getNotificationType = (activity_type: string) => {
-  switch (type) {
+  switch (activity_type) {
     case 'completed_task': return 'success'
     case 'created_task': return 'info'
     case 'created_project': return 'success'
     case 'uploaded_file': return 'info'
     case 'scheduled_meeting': return 'info'
-    default: return Info
+    default: return 'info'
   }
 }
 

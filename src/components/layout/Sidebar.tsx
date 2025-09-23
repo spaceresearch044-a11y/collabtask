@@ -164,8 +164,6 @@ export const Sidebar: React.FC = () => {
           >
             <Sparkles className="w-5 h-5 text-white" />
           </motion.div>
-          {sidebarOpen && (
-            <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
@@ -187,24 +185,13 @@ export const Sidebar: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
-            whileHover={{ 
-              x: sidebarOpen ? 8 : 4,
-              scale: 1.02,
-              rotateY: 5,
-              rotateX: 2
-            }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNavigation(item.key)}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
-              currentPage === item.key 
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.2 }}
                 ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg ${item.glowColor}` 
                 : `text-gray-300 hover:text-white ${item.hoverColor}`
             } ${
               sidebarOpen ? 'justify-start' : 'justify-center'
             }`}
-          >
-            {/* 3D Glow Effect */}
-            {currentPage === item.key && (
               <motion.div
                 layoutId="activeGlow"
                 className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl blur-sm"
@@ -309,29 +296,6 @@ export const Sidebar: React.FC = () => {
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900"
-              />
-            </div>
-            {sidebarOpen && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="text-sm font-medium text-white truncate">
-                  {profile.full_name || 'User'}
-                </p>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-gray-400">
-                    Level {profile.level}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-yellow-400" />
-                    <span className="text-xs text-yellow-400">{profile.points}</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </motion.div>
         </div>
       )}

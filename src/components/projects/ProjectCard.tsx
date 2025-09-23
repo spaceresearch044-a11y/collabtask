@@ -259,7 +259,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               variant="primary" 
               size="sm" 
               icon={<ExternalLink className="w-4 h-4" />}
-              onClick={() => onProjectClick?.(project.id)}
             >
               Open
             </Button>

@@ -36,8 +36,8 @@ export const useFiles = () => {
       if (projectId) {
         query = query.eq('project_id', projectId)
       } else {
-        // Fetch files from user's projects or files they uploaded
-        query = query.eq('uploaded_by', user.id)
+        // Fetch files the user has access to
+        query = query.eq('user_id', user.id)
       }
 
       const { data, error } = await query
@@ -72,6 +72,7 @@ export const useFiles = () => {
       const { data, error } = await supabase
         .from('files')
         .insert({
+          user_id: user.id,
           uploaded_by: user.id,
           project_id: options.project_id || null,
           task_id: options.task_id || null,

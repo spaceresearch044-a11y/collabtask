@@ -19,11 +19,11 @@ export const Dashboard: React.FC = () => {
   const { currentView } = useSelector((state: RootState) => state.ui)
   const { projects, loading, error, fetchProjects } = useProjects()
 
-  // Show error popup only for users who have created projects before
-  const shouldShowError = error && profile?.has_ever_created_project
+  // Show error only for actual fetch failures, not for new users
+  const shouldShowError = error && !loading && profile?.has_ever_created_project
 
-  // Show empty state for new users with no projects
-  if (!loading && projects.length === 0 && !shouldShowError) {
+  // Show empty state for new users with no projects and no errors
+  if (!loading && projects.length === 0 && !error) {
     return <EmptyState type="projects" />
   }
 
@@ -40,6 +40,9 @@ export const Dashboard: React.FC = () => {
             <p className="text-gray-400">
               We couldn't load your projects. Please check your connection and try again.
             </p>
+            <p className="text-sm text-gray-500">
+              Error: {error}
+            </p>
           </div>
           <Button
             variant="primary"
@@ -49,6 +52,18 @@ export const Dashboard: React.FC = () => {
             Retry
           </Button>
         </Card>
+      </div>
+    )
+  }
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-300">Loading your dashboard...</p>
+        </div>
       </div>
     )
   }

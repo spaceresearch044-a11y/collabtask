@@ -62,18 +62,14 @@ export const Header: React.FC = () => {
         {/* Left side - Logo & Search */}
         <div className="flex items-center gap-6 flex-1 max-w-2xl">
           {/* 3D Spinning Logo */}
-          <motion.div
-            animate={{ rotateY: 360 }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-            className="flex items-center gap-3"
-          >
+          <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               CollabTask
             </h1>
-          </motion.div>
+          </div>
 
           {/* Enhanced Search Bar */}
           <div className="relative flex-1 max-w-lg">
