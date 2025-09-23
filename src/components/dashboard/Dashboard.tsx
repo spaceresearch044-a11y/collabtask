@@ -1,7 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { useSelector } from 'react-redux'
-import { AlertCircle, RefreshCw } from 'lucide-react'
+import { AlertCircle, RefreshCw, CheckSquare } from 'lucide-react'
 import { RootState } from '../../store/store'
 import { useProjects } from '../../hooks/useProjects'
 import { ProjectOverviewCards } from './ProjectOverviewCards'

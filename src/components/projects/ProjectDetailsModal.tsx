@@ -67,7 +67,7 @@ export const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
   const { updateProject, deleteProject, loading } = useProjects()
   const { tasks } = useTasks(project.id)
   const { members } = useTeam()
-
+  const { updateTask, deleteTask: deleteTaskHook } = useTasks()
   useEffect(() => {
     if (project.project_type === 'team') {
       fetchTeamCode()
@@ -105,10 +105,38 @@ export const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
       try {
         await deleteProject(project.id)
         onUpdate()
-        onClose()
+        await deleteTaskHook(taskId)
       } catch (error) {
         console.error('Error deleting project:', error)
       }
+    }
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    // This would be implemented with the team hook
+    console.log('Remove member:', memberId)
+  }
+
+  const handleLeaveTeam = async () => {
+    if (window.confirm('Are you sure you want to leave this team?')) {
+      // This would be implemented with the team hook
+      console.log('Leave team:', project.id)
+    }
+  }
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin': return Crown
+      case 'lead': return Shield
+      default: return User
+    }
+  }
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin': return 'text-yellow-400'
+      case 'lead': return 'text-blue-400'
+      default: return 'text-gray-400'
     }
   }
 

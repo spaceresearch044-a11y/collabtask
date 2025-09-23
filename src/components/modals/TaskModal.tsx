@@ -93,6 +93,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       }
       
       onSuccess()
+      resetForm()
     } catch (error) {
       console.error('Error with task:', error)
     }
@@ -107,6 +108,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       assigned_to: '',
       due_date: ''
     })
+    setSelectedTask(null)
   }
 
   const handleClose = () => {
