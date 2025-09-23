@@ -111,7 +111,6 @@ export const useTeam = () => {
   const inviteMember = async (email: string, role: 'admin' | 'lead' | 'member' = 'member') => {
     if (!user) throw new Error('User not authenticated')
 
-    setLoading(true)
     setError(null)
     
     try {
@@ -126,19 +125,19 @@ export const useTeam = () => {
         throw new Error('User not found. They need to create an account first.')
       }
 
-      // Get user's primary project (first project they created)
-      const { data: userProjects } = await supabase
+      // Get user's team projects
+      const { data: teamProjects } = await supabase
         .from('projects')
-        .select('id')
+        .select('id, name')
         .eq('created_by', user.id)
-        .limit(1)
-        .maybeSingle()
+        .eq('project_type', 'team')
       
-      if (!userProjects) {
-        throw new Error('No project found to invite member to')
+      if (!teamProjects || teamProjects.length === 0) {
+        throw new Error('No team projects found to invite member to')
       }
 
-      const projectId = userProjects.id
+      // Use the first team project for now
+      const projectId = teamProjects[0].id
 
       // Check if user is already a member
       const { data: existingMember } = await supabase
@@ -168,8 +167,6 @@ export const useTeam = () => {
     } catch (error: any) {
       setError(error.message)
       throw error
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -198,10 +195,14 @@ export const useTeam = () => {
     if (!user) throw new Error('User not authenticated')
 
     try {
+      // Get user's team projects to remove member from
+      const projectIds = await getUserProjectIds()
+      
       const { error } = await supabase
         .from('project_members')
         .delete()
         .eq('user_id', memberId)
+        .in('project_id', projectIds)
 
       if (error) throw error
 
@@ -213,12 +214,30 @@ export const useTeam = () => {
     }
   }
 
+  const leaveTeam = async (projectId: string) => {
+    if (!user) throw new Error('User not authenticated')
+
+    try {
+      const { error } = await supabase
+        .from('project_members')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
   useEffect(() => {
     if (user) {
       fetchMembers()
     }
   }, [user])
 
+      // Refresh members list
+      await fetchMembers()
+    } catch (error: any) {
+      setError(error.message)
+      throw error
+    }
+  }
   return {
     members,
     loading,

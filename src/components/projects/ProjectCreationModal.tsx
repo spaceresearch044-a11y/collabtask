@@ -39,7 +39,7 @@ export const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
   const [generatedCode, setGeneratedCode] = useState('')
   const [codeCopied, setCodeCopied] = useState(false)
   
-  const { createProject, joinProject, loading } = useProjects()
+  const { createProject, joinProject, loading, error } = useProjects()
 
   const handleSubmit = async () => {
     try {

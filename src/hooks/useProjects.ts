@@ -62,7 +62,6 @@ export const useProjects = () => {
     if (!user) throw new Error('User not authenticated')
 
     try {
-      setLoading(true)
       setError(null)
       
       let teamCode = null
@@ -128,8 +127,6 @@ export const useProjects = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project')
       throw err instanceof Error ? err : new Error('Failed to create project')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -137,7 +134,6 @@ export const useProjects = () => {
     if (!user) throw new Error('User not authenticated')
 
     try {
-      setLoading(true)
       setError(null)
       
       // Find valid team code
@@ -196,14 +192,11 @@ export const useProjects = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join project')
       throw err instanceof Error ? err : new Error('Failed to join project')
-    } finally {
-      setLoading(false)
     }
   }
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
-      setLoading(true)
       setError(null)
       
       const { data, error } = await supabase
@@ -236,14 +229,11 @@ export const useProjects = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update project')
       throw err instanceof Error ? err : new Error('Failed to update project')
-    } finally {
-      setLoading(false)
     }
   }
 
   const deleteProject = async (id: string) => {
     try {
-      setLoading(true)
       setError(null)
       
       // Get project name for logging
@@ -274,8 +264,6 @@ export const useProjects = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete project')
       throw err instanceof Error ? err : new Error('Failed to delete project')
-    } finally {
-      setLoading(false)
     }
   }
 

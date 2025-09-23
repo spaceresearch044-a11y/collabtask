@@ -110,7 +110,6 @@ export const useTasks = (projectId?: string) => {
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
     try {
-      setLoading(true)
       setError(null)
       
       const { data, error } = await supabase
@@ -143,14 +142,11 @@ export const useTasks = (projectId?: string) => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update task')
       throw err instanceof Error ? err : new Error('Failed to update task')
-    } finally {
-      setLoading(false)
     }
   }
 
   const deleteTask = async (id: string) => {
     try {
-      setLoading(true)
       setError(null)
       
       // Get task info for logging
@@ -179,8 +175,6 @@ export const useTasks = (projectId?: string) => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete task')
       throw err instanceof Error ? err : new Error('Failed to delete task')
-    } finally {
-      setLoading(false)
     }
   }
 

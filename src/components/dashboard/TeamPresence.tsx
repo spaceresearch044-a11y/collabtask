@@ -1,71 +1,20 @@
-import React, { useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
+  Phone,
+  UserPlus,
+  UserMinus,
+  Crown,
+  Shield,
+  User as UserIcon,
+  LogOut
 import { Users, Circle, MessageCircle, Video, Phone } from 'lucide-react'
 import { Card } from '../ui/Card'
+import { Button } from '../ui/Button'
 import { useTeam } from '../../hooks/useTeam'
+import { useProjects } from '../../hooks/useProjects'
+import { useSelector } from 'react-redux'
+import { RootState } from '../../store/store'
 
-interface TeamMember {
-  id: string
-  name: string
-  role: string
-  avatar: string
-  status: 'online' | 'away' | 'busy' | 'offline'
-  lastSeen?: string
-  currentTask?: string
-}
-
-const teamMembers: TeamMember[] = [
-  {
-    id: '1',
-    name: 'Sarah Chen',
-    role: 'UI/UX Designer',
-    avatar: 'SC',
-    status: 'online',
-    currentTask: 'Working on mobile wireframes'
-  },
-  {
-    id: '2',
-    name: 'Alex Rodriguez',
-    role: 'Frontend Developer',
-    avatar: 'AR',
-    status: 'online',
-    currentTask: 'Implementing dashboard components'
-  },
-  {
-    id: '3',
-    name: 'Emma Wilson',
-    role: 'Product Manager',
-    avatar: 'EW',
-    status: 'busy',
-    currentTask: 'In meeting with stakeholders'
-  },
-  {
-    id: '4',
-    name: 'Mike Johnson',
-    role: 'Backend Developer',
-    avatar: 'MJ',
-    status: 'away',
-    lastSeen: '5 minutes ago'
-  },
-  {
-    id: '5',
-    name: 'Lisa Park',
-    role: 'QA Engineer',
-    avatar: 'LP',
-    status: 'online',
-    currentTask: 'Testing API endpoints'
-  },
-  {
-    id: '6',
-    name: 'David Kim',
-    role: 'DevOps Engineer',
-    avatar: 'DK',
-    status: 'offline',
-    lastSeen: '2 hours ago'
-  }
-]
-
-const getStatusColor = (status: TeamMember['status']) => {
+const getStatusColor = (status: 'online' | 'away' | 'busy' | 'offline') => {
   switch (status) {
     case 'online': return 'bg-green-500 shadow-green-500/50'
     case 'away': return 'bg-yellow-500 shadow-yellow-500/50'
@@ -75,34 +24,59 @@ const getStatusColor = (status: TeamMember['status']) => {
   }
 }
 
-const getStatusText = (member: TeamMember) => {
-  switch (member.status) {
-    case 'online': return member.currentTask || 'Available'
-    case 'away': return `Away • ${member.lastSeen}`
-    case 'busy': return member.currentTask || 'Busy'
-    case 'offline': return `Offline • ${member.lastSeen}`
-    default: return 'Unknown'
+const getRoleIcon = (role: string) => {
+  switch (role) {
+    case 'admin': return Crown
+    case 'lead': return Shield
+    default: return UserIcon
+  }
+}
+
+const getRoleColor = (role: string) => {
+  switch (role) {
+    case 'admin': return 'text-yellow-400'
+    case 'lead': return 'text-blue-400'
+    default: return 'text-gray-400'
   }
 }
 
 export const TeamPresence: React.FC = () => {
-  const { members, loading, fetchMembers } = useTeam()
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'lead' | 'member'>('member')
+  
+  const { members, loading, fetchMembers, inviteMember, removeMember } = useTeam()
+  const { projects } = useProjects()
+  const { user } = useSelector((state: RootState) => state.auth)
   
   useEffect(() => {
     fetchMembers()
   }, [])
   
-  // Convert team members to the expected format
-  const teamMembers: TeamMember[] = members.map(member => ({
-    id: member.id,
-    name: member.full_name || member.email,
-    role: member.role === 'lead' ? 'Team Lead' : 'Team Member',
-    avatar: (member.full_name?.charAt(0) || member.email.charAt(0)).toUpperCase(),
-    status: member.is_online ? 'online' : 'offline',
-    lastSeen: member.last_seen ? new Date(member.last_seen).toLocaleString() : 'Unknown'
-  }))
+  const teamProjects = projects.filter(p => p.project_type === 'team')
+  const onlineMembers = members.filter(m => m.is_online)
   
-  const onlineMembers = teamMembers.filter(m => m.status === 'online' || m.status === 'busy')
+  const handleInviteMember = async () => {
+    if (!inviteEmail.trim()) return
+    
+    try {
+      await inviteMember(inviteEmail, selectedRole)
+      setInviteEmail('')
+      setShowInviteModal(false)
+    } catch (error) {
+      console.error('Error inviting member:', error)
+    }
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (window.confirm('Are you sure you want to remove this member?')) {
+      try {
+        await removeMember(memberId)
+      } catch (error) {
+        console.error('Error removing member:', error)
+      }
+    }
+  }
 
   if (loading) {
     return (
@@ -122,17 +96,23 @@ export const TeamPresence: React.FC = () => {
           Team Presence
           <span className="text-sm text-gray-400">({onlineMembers.length} online)</span>
         </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowInviteModal(true)}
+          icon={<UserPlus className="w-4 h-4" />}
         >
-          View All
-        </motion.button>
+          Invite
+        </Button>
       </div>
 
       <div className="space-y-3">
-        {teamMembers.map((member, index) => (
+        {members.map((member, index) => {
+          const RoleIcon = getRoleIcon(member.role)
+          const status = member.is_online ? 'online' : 'offline'
+          const isCurrentUser = user?.id === member.id
+          
+          return (
           <motion.div
             key={member.id}
             initial={{ opacity: 0, x: -20 }}
@@ -181,54 +161,141 @@ export const TeamPresence: React.FC = () => {
                     whileTap={{ scale: 0.9 }}
                     className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
                     title="Video Call"
-                  >
+                  {member.full_name?.charAt(0) || member.email.charAt(0)}
                     <Video className="w-3 h-3" />
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.1 }}
+                    scale: status === 'online' ? [1, 1.2, 1] : 1,
                     whileTap={{ scale: 0.9 }}
                     className="p-1 text-gray-400 hover:text-purple-400 transition-colors"
                     title="Voice Call"
-                  >
+                    repeat: status === 'online' ? Infinity : 0 
                     <Phone className="w-3 h-3" />
-                  </motion.button>
+                  className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-gray-900 ${getStatusColor(status)}`}
                 </div>
               </div>
               <p className="text-xs text-gray-400 truncate">{member.role}</p>
-              <p className="text-xs text-gray-500 truncate mt-1">
-                {getStatusText(member)}
-              </p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mt-6 pt-4 border-t border-gray-800">
-        <div className="grid grid-cols-2 gap-3">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex items-center justify-center gap-2 p-3 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg text-blue-300 hover:text-blue-200 transition-all text-sm"
-          >
-            <Video className="w-4 h-4" />
-            Start Meeting
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={(e) => {
-              e.stopPropagation()
+                  <div className="flex items-center gap-1">
+                    <div className={`flex items-center gap-1 ${getRoleColor(member.role)}`}>
+                      <RoleIcon className="w-3 h-3" />
+                      <span className="text-xs">{member.role}</span>
+                    </div>
+                    {!isCurrentUser && (
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          className="p-1 text-gray-400 hover:text-green-400 transition-colors"
+                          title="Message"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleRemoveMember(member.id)}
+                          className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                          title="Remove Member"
+                        >
+                          <UserMinus className="w-3 h-3" />
+                        </motion.button>
+                      </div>
+                    )}
               // TODO: Open team management modal
               console.log('Manage team')
-            }}
+                <p className="text-xs text-gray-400 truncate">{member.email}</p>
             className="flex items-center justify-center gap-2 p-3 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg text-purple-300 hover:text-purple-200 transition-all text-sm"
-          >
+                  {status === 'online' ? 'Available' : `Last seen ${new Date(member.last_seen).toLocaleString()}`}
             <Users className="w-4 h-4" />
             Invite Member
           </motion.button>
-        </div>
+          )
+        })}
+        
+            onClick={() => setShowInviteModal(true)}
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowInviteModal(true)}
+              icon={<UserPlus className="w-3 h-3" />}
+            >
+              Invite first member
+            </Button>
+
+      {/* Invite Member Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowInviteModal(false)}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative w-full max-w-md"
+          >
+            <Card className="p-6 space-y-6" glow>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">Invite Team Member</h3>
+                <button
+                  onClick={() => setShowInviteModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+          </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-200">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+        )}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-200">
+                    Role
+                  </label>
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="member">Member</option>
+                    <option value="lead">Team Lead</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
       </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleInviteMember}
+                  disabled={!inviteEmail.trim()}
+                  className="flex-1"
+                  icon={<UserPlus className="w-4 h-4" />}
+                >
+                  Send Invite
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      )}
     </Card>
   )
 }
